@@ -4,7 +4,7 @@
 	"name": "Heavy Rental Java REST API",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "heavy-rental-rest-api",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"workspaceFolder": "/workspaces/heavy-rental-rest-api",
 	"shutdownAction": "stopCompose",	
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
@@ -28,7 +28,20 @@
 				"vscjava.vscode-java-pack",
 				"vmware.vscode-boot-dev-pack",
 				"ms-ossdata.vscode-pgsql"
-			]
+			],
+			"settings": {
+				"pgsql.connections": [
+					{
+						"profileName": "heavy-rental-rest-api-db-connection",
+						"host": "postgres",
+						"port": 5432,
+						"database": "postgres",
+						"user": "postgres",
+						"authenticationType": "SqlLogin",
+						"savePassword": true
+					}
+				]
+			}
 		}
 	}
 

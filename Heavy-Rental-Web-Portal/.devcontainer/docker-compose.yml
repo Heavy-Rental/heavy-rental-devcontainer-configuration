@@ -1,3 +1,6 @@
+volumes:
+  heavy-rental-web-portal-data:
+
 
 services:
   heavy-rental-web-portal:
@@ -7,7 +10,7 @@ services:
       dockerfile: Dockerfile
 
     volumes:
-      - ../..:/workspaces:cached
+      - heavy-rental-web-portal-data:/workspaces/heavy-rental-web-portal
       
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity

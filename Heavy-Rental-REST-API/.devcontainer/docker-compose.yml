@@ -1,5 +1,7 @@
 volumes:
   postgres-data:
+  heavy-rental-rest-api-data:
+
 
 services:
   heavy-rental-rest-api:
@@ -15,7 +17,7 @@ services:
         POSTGRES_HOSTNAME: db
 
     volumes:
-      - ../..:/workspaces:cached
+      - heavy-rental-rest-api-data:/workspaces/heavy-rental-rest-api
       
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity

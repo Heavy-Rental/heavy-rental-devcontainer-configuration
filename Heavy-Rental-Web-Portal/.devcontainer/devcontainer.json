@@ -4,7 +4,7 @@
 	"name": "Heavy Rental Web Portal (React)",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "heavy-rental-web-portal",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"workspaceFolder": "/workspaces/heavy-rental-web-portal",
 	"shutdownAction": "stopCompose",
 	"customizations": {
 		"vscode": {
