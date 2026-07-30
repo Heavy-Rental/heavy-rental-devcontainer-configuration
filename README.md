@@ -320,7 +320,7 @@ Objective: To create DevContainer for Spring Boot REST API project
 ![alt text](images/finding-rest-api-project-folder.png)
 
 
-5. While the `Select Folder` window is still open from previous step 4, Click ![alt text](images/open-button-select-folder.png) button
+5. While the `Select Folder` window is still open from previous step 4, double click on the `Heavy-Rental-REST-API` to navigate into the `Heavy-Rental-REST-API` folder and Click ![alt text](images/open-button-select-folder.png) button
 ![alt text](images/java-spring-boot-rest-api-devcontainer-folder.png)
 
 
@@ -355,6 +355,16 @@ Objective: To create DevContainer for Spring Boot REST API project
 ### React (Heavy Rental Web Portal) Project Setup Steps
 
 
+1. Go to Visual Studio Code IDE
+![alt text](images/visual-studio-code-ide.png)
 
+2. Click on the ![alt text](images/plus-button.png) button to expand the Visual Studio Code Menu
+![alt text](images/expand-visual-studio-code-menu.png)
+
+3. The menu will appear from the top window of the Visual Studio Code IDE
+![alt text](images/visual-studio-code-menu.png)
+
+4. Select ![alt text](images/open-folder-in-container-option.png) to trigger the open window to find the project folder `.devcontainer`
+![alt text](images/finding-rest-api-project-folder.png)
 
 
