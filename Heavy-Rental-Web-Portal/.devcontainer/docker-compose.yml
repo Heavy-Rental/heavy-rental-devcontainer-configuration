@@ -1,0 +1,31 @@
+
+services:
+  haystack-fast-api:
+    container_name: haystack-fast-api
+    build: 
+      context: .
+      dockerfile: Dockerfile
+
+    volumes:
+      - ../..:/workspaces:cached
+      
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    # Use proper Docker networking instead of network_mode: service:db
+    # to ensure reliable DNS resolution in all environments
+    #depends_on:
+    #  db:
+    #    condition: service_healthy
+    networks:
+      - heavy-rental-network
+
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+
+
+networks:
+  heavy-rental-network:
+    external: true
+    driver: bridge
