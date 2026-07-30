@@ -318,9 +318,11 @@ Objective: To create DevContainer for Spring Boot REST API project
 
 4. Select ![alt text](images/open-folder-in-container-option.png) to trigger the open window to find the project folder `.devcontainer`
 ![alt text](images/finding-rest-api-project-folder.png)
+
+
+5. While the `Select Folder` window is still open from previous step 4, Click ![alt text](images/open-button-select-folder.png) button
 ![alt text](images/java-spring-boot-rest-api-devcontainer-folder.png)
 
-5. While the `Select Folder` window is still open from previous step 5, Click ![alt text](images/open-button-select-folder.png) button
 
 6. The pop up window shows the question asking if you trust the folder and its content. Click on ![alt text](images/trust-folder-and-continue-button.png) button to complete the process of creating Java Spring Boot DevContainer 
 ![alt text](images/pop-up-window-to-trust-folder-java-spring-boot-rest-api.png)
@@ -349,3 +351,10 @@ Objective: To create DevContainer for Spring Boot REST API project
       * Maven for Java (Extension ID: vscjava.vscode-maven )
       * Debugger for Java (vscjava.vscode-java-debug)
     * PostgreSQL (Extension ID: ms-ossdata.vscode-pgsql)
+
+### React (Heavy Rental Web Portal) Project Setup Steps
+
+
+
+
+
