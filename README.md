@@ -352,6 +352,13 @@ Objective: To create DevContainer for Spring Boot REST API project
       * Debugger for Java (vscjava.vscode-java-debug)
     * PostgreSQL (Extension ID: ms-ossdata.vscode-pgsql)
 
+
+#### End to End Project Setup Video for Java Spring Boot REST API Project
+
+ <video controls src="https://github.com/user-attachments/assets/538b6cdd-4554-4dd9-a040-c9f9214a7f26" title="End to End Project Setup Video for Java Spring Boot REST API Project"></video>
+
+
+
 ### Haystack + Fast API Project (Haystack-Fast-API) Project Setup Steps
 
 Objective: To create DevContainer for Haystack + Fast API project
