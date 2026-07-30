@@ -273,13 +273,17 @@ Use this space to list resources you find helpful and would like to give credit 
 ## Setup Guide for Visual Studio Code
 
 1. Pull this repository to your desktop
+   <video controls src="https://github.com/SA62-team1/heavy-rental-devcontainer-configuration/blob/master/videos/pulling%20heavy-rental-devcontainer-configuration%20repository%20to%20desktop.mp4" title="Remote Development Extension Installation"></video>
+
+
+
 2. Setup Visual Studio Code by installing these extension:
    * Remote Development (Extension ID: ms-vscode-remote.vscode-remote-extensionpack)
       
       Purpose: This extension allows you to develop your project in a docker container.
     ![alt text](images/remotedevelopment.png)
 
-      <video controls src="videos/Remote Development Extension Installation.mp4" title="Title"></video>
+      <video controls src="https://github.com/SA62-team1/heavy-rental-devcontainer-configuration/blob/master/videos/Remote%20Development%20Extension%20Installation.mp4" title="Remote Development Extension Installation"></video>
 
 
    * Container Tools (Extension ID: ms-azuretools.vscode-containers) 
@@ -287,7 +291,7 @@ Use this space to list resources you find helpful and would like to give credit 
       Purpose: This extension helps you access the container directly to perform debugging 
     ![alt text](images/ContainerTools.png)
     
-    <video controls src="videos/Container Tool Extension Installation.mp4" title="Title"></video>
+    <video controls src="https://github.com/SA62-team1/heavy-rental-devcontainer-configuration/blob/master/videos/Container%20Tool%20Extension%20Installation.mp4" title="Container Tool Extension Installation"></video>
 
 
 ## Setup Guide for the Java Spring Boot REST API Project
