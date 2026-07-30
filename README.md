@@ -273,7 +273,8 @@ Use this space to list resources you find helpful and would like to give credit 
 ## Setup Guide for Visual Studio Code
 
 1. Pull this repository to your desktop
-   <video controls src="https://github.com/SA62-team1/heavy-rental-devcontainer-configuration/blob/master/videos/pulling%20heavy-rental-devcontainer-configuration%20repository%20to%20desktop.mp4" title="Remote Development Extension Installation"></video>
+
+   <video controls src="https://github.com/user-attachments/assets/f21daa30-dcb9-44b8-a93a-966e5689aeb6" title="Remote Development Extension Installation"></video>
 
 
 
