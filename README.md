@@ -270,6 +270,10 @@ Use this space to list resources you find helpful and would like to give credit 
 [JQuery-url]: https://jquery.com 
 
 
+## Setup Guide to create docker network heavy-rental-network
+   <video controls src="https://github.com/user-attachments/assets/f21daa30-dcb9-44b8-a93a-966e5689aeb6" title="Pulling Heavy Rental DevContainer Configuration Git Repository"></video>
+
+
 ## Setup Guide for Visual Studio Code
 
 1. Pull this repository to your desktop
@@ -358,6 +362,14 @@ Objective: To create DevContainer for Spring Boot REST API project
  <video controls src="https://github.com/user-attachments/assets/538b6cdd-4554-4dd9-a040-c9f9214a7f26" title="End to End Project Setup Video for Java Spring Boot REST API Project"></video>
 
 
+## Setup Guide for the Haystack + FastAPI Project
+
+Precondition
+1. Visual Studio Code IDE is installed
+2. Remote Development Extension is installed into Visual Studio Code IDE
+3. Container Tools Extension is installed into Visual Studio Code IDE
+
+
 
 ### Haystack + Fast API Project (Haystack-Fast-API) Project Setup Steps
 
@@ -404,9 +416,17 @@ Objective: To create DevContainer for Haystack + Fast API project
     * Python Environments (Extension ID: ms-python.vscode-python-envs)
 
 
+#### End to End Project Setup Video for Haystack + Fast API Project
+
+ <video controls src="https://github.com/user-attachments/assets/c6f8e078-4f3f-4f31-badc-84a90633823d" title="End to End Project Setup Video for Haystack + Fast API Project"></video>
 
 
+## Setup Guide for the React (Heavy Rental Web Portal) Project
 
+Precondition
+1. Visual Studio Code IDE is installed
+2. Remote Development Extension is installed into Visual Studio Code IDE
+3. Container Tools Extension is installed into Visual Studio Code IDE
 
 
 ### React (Heavy Rental Web Portal) Project Setup Steps
