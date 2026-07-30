@@ -5,8 +5,8 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "heavy-rental-rest-api",
 	"workspaceFolder": "/workspaces/heavy-rental-rest-api",
-	"shutdownAction": "stopCompose",	
-
+	"shutdownAction": "stopCompose",
+	
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {}
 
@@ -15,7 +15,7 @@
 	"forwardPorts": [5432],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "java -version",
+	"postCreateCommand": "sudo chown -R vscode /workspaces/heavy-rental-rest-api",
 
 
 	// Use 'postCreateCommand' to run commands after the container is created.
@@ -43,8 +43,11 @@
 				]
 			}
 		}
-	}
+	},
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
+
+	// assign non-root user 
+	"remoteUser": "vscode"
 }
