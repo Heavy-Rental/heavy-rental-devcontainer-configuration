@@ -268,3 +268,79 @@ Use this space to list resources you find helpful and would like to give credit 
 [Bootstrap-url]: https://getbootstrap.com
 [JQuery.com]: https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white
 [JQuery-url]: https://jquery.com 
+
+
+## Setup Guide for Visual Studio Code
+
+1. Pull this repository to your desktop
+2. Setup Visual Studio Code by installing these extension:
+   * Remote Development (Extension ID: ms-vscode-remote.vscode-remote-extensionpack)
+      
+      Purpose: This extension allows you to develop your project in a docker container.
+    ![alt text](images/remotedevelopment.png)
+
+      <video controls src="videos/Remote Development Extension Installation.mp4" title="Title"></video>
+
+
+   * Container Tools (Extension ID: ms-azuretools.vscode-containers) 
+
+      Purpose: This extension helps you access the container directly to perform debugging 
+    ![alt text](images/ContainerTools.png)
+    
+    <video controls src="videos/Container Tool Extension Installation.mp4" title="Title"></video>
+
+
+## Setup Guide for the Java Spring Boot REST API Project
+
+Precondition
+1. Visual Studio Code IDE is installed
+2. Remote Development Extension is installed into Visual Studio Code IDE
+3. Container Tools Extension is installed into Visual Studio Code IDE
+
+
+### Spring Boot REST API Project Setup Steps
+
+Objective: To create DevContainer for Spring Boot REST API project
+
+1. Go to Visual Studio Code IDE
+![alt text](images/visual-studio-code-ide.png)
+
+2. Click on the ![alt text](images/plus-button.png) button to expand the Visual Studio Code Menu
+![alt text](images/expand-visual-studio-code-menu.png)
+
+3. The menu will appear from the top window of the Visual Studio Code IDE
+![alt text](images/visual-studio-code-menu.png)
+
+4. Select ![alt text](images/open-folder-in-container-option.png) to trigger the open window to find the project folder `.devcontainer`
+![alt text](images/finding-rest-api-project-folder.png)
+![alt text](images/java-spring-boot-rest-api-devcontainer-folder.png)
+
+5. While the `Select Folder` window is still open from previous step 5, Click ![alt text](images/open-button-select-folder.png) button
+
+6. The pop up window shows the question asking if you trust the folder and its content. Click on ![alt text](images/trust-folder-and-continue-button.png) button to complete the process of creating Java Spring Boot DevContainer 
+![alt text](images/pop-up-window-to-trust-folder-java-spring-boot-rest-api.png)
+
+7. You should expect to see this window and you should see the mini window at the right bottom showing the text `Connecting to Dev Container (show log)`
+![alt text](images/java-spring-boot-creating-devcontainer-1.png)
+
+
+8. Click on the text `Connecting to Dev Container (show log)` to view the logs during the process of creating devcontainer
+![alt text](images/java-spring-boot-creating-devcontainer-2.png)
+
+9. At the end of the process of creating devcontainer for Java Spring Boot REST API, you should be able to view the following extensions installed in your Dev Container within Visual Studio Code IDE.
+![alt text](images/java-spring-boot-devcontainer-installed-extension.png)
+
+
+    The following visual studio code extension should be installed in the IDE:
+    * Spring Boot Extension Pack (Extension ID: vmware.vscode-boot-dev-pack)
+      * Spring Intializr Java Support (Extension ID: vscjava.vscode-spring-initializr)
+      * Spring Boot Tools (Extension ID: vmware.vscode-spring-boot)
+      * Spring Boot Dashboard (Extension ID: vscjava.vscode-spring-boot-dashboard)
+    * Extension Pack for Java (Extension ID: vscjava.vscode-java-pack)
+      * Language Support for Java(TM) by Red Hat (Extension ID: redhat.java)
+      * Test Runner for Java (Extension ID: vscjava.vscode-java-test)
+      * Gradle for Java (Extension ID: vscjava.vscode-gradle)
+      * Project Manager for Java (Extension ID: vscjava.vscode-java-dependency)
+      * Maven for Java (Extension ID: vscjava.vscode-maven )
+      * Debugger for Java (vscjava.vscode-java-debug)
+    * PostgreSQL (Extension ID: ms-ossdata.vscode-pgsql)
