@@ -1,10 +1,32 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/miniconda
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
 {
-	"name": "Haystack Fast API",
+	"name": "Heavy Rental Web Portal (React)",
 	"dockerComposeFile": "docker-compose.yml",
-	"service": "haystack-fast-api",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+	"service": "heavy-rental-web-portal",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"shutdownAction": "stopCompose",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dsznajder.es7-react-js-snippets",
+				"firefox-devtools.vscode-firefox-debug",
+				"ms-edgedevtools.vscode-edge-devtools",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"planbcoding.vscode-react-refactor",
+				"wix.vscode-import-cost",
+				"burkeholland.simple-react-snippets",
+				"formulahendry.auto-rename-tag",
+				"christian-kohler.path-intellisense",
+				"christian-kohler.npm-intellisense",
+				"usernamehw.errorlens",
+				"stylelint.vscode-stylelint",
+				"Orta.vscode-jest",
+				"Thinker.mock-server"
+			]
+		}
+	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

@@ -1,7 +1,7 @@
 
 services:
-  haystack-fast-api:
-    container_name: haystack-fast-api
+  heavy-rental-web-portal:
+    container_name: heavy-rental-web-portal
     build: 
       context: .
       dockerfile: Dockerfile
