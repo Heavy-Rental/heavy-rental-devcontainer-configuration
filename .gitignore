@@ -1,0 +1,12 @@
+# Ignore everything under the project folders
+/Haystack-Fast-API/**
+/Heavy-Rental-REST-API/**
+/Heavy-Rental-Web-Portal/**
+
+# But keep the .devcontainer folder inside each one
+!/Haystack-Fast-API/.devcontainer/
+!/Haystack-Fast-API/.devcontainer/**
+!/Heavy-Rental-REST-API/.devcontainer/
+!/Heavy-Rental-REST-API/.devcontainer/**
+!/Heavy-Rental-Web-Portal/.devcontainer/
+!/Heavy-Rental-Web-Portal/.devcontainer/**
