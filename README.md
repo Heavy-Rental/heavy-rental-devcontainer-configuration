@@ -274,7 +274,7 @@ Use this space to list resources you find helpful and would like to give credit 
 
 1. Pull this repository to your desktop
 
-   <video controls src="https://github.com/user-attachments/assets/f21daa30-dcb9-44b8-a93a-966e5689aeb6" title="Remote Development Extension Installation"></video>
+   <video controls src="https://github.com/user-attachments/assets/f21daa30-dcb9-44b8-a93a-966e5689aeb6" title="Pulling Heavy Rental DevContainer Configuration Git Repository"></video>
 
 
 
@@ -284,7 +284,7 @@ Use this space to list resources you find helpful and would like to give credit 
       Purpose: This extension allows you to develop your project in a docker container.
     ![alt text](images/remotedevelopment.png)
 
-      <video controls src="https://github.com/SA62-team1/heavy-rental-devcontainer-configuration/blob/master/videos/Remote%20Development%20Extension%20Installation.mp4" title="Remote Development Extension Installation"></video>
+      <video controls src="https://github.com/user-attachments/assets/3ae3aef7-5672-4aa5-9230-68429f928d4c" title="Remote Development Extension Installation"></video>
 
 
    * Container Tools (Extension ID: ms-azuretools.vscode-containers) 
@@ -292,7 +292,7 @@ Use this space to list resources you find helpful and would like to give credit 
       Purpose: This extension helps you access the container directly to perform debugging 
     ![alt text](images/ContainerTools.png)
     
-    <video controls src="https://github.com/SA62-team1/heavy-rental-devcontainer-configuration/blob/master/videos/Container%20Tool%20Extension%20Installation.mp4" title="Container Tool Extension Installation"></video>
+    <video controls src="https://github.com/user-attachments/assets/3843a0c8-4404-4894-ac56-8601a1196502" title="Container Tool Extension Installation"></video>
 
 
 ## Setup Guide for the Java Spring Boot REST API Project
