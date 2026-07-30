@@ -405,6 +405,10 @@ Objective: To create DevContainer for Haystack + Fast API project
 
 
 
+
+
+
+
 ### React (Heavy Rental Web Portal) Project Setup Steps
 
 
@@ -434,8 +438,10 @@ Objective: To create DevContainer for Haystack + Fast API project
 ![alt text](image-2.png)
 
 
-
-
-
-
 ![alt text](image-3.png)
+
+#### End to End Project Setup Video for Heavy Rental Web Portal Project
+
+ <video controls src="https://github.com/user-attachments/assets/b607ccf1-e998-44d0-9700-6adc06315a21" title="End to End Project Setup Video for Heavy Rental Web Portal Project"></video>
+
+
