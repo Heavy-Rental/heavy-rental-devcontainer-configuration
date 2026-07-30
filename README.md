@@ -271,7 +271,10 @@ Use this space to list resources you find helpful and would like to give credit 
 
 
 ## Setup Guide to create docker network heavy-rental-network
-   <video controls src="https://github.com/user-attachments/assets/f21daa30-dcb9-44b8-a93a-966e5689aeb6" title="Pulling Heavy Rental DevContainer Configuration Git Repository"></video>
+1. The projects uses docker network heavy-rental-network to connect different docker containers used in this project.
+2. You need to manually create the docker network to allow different container to have visiblity on each other.
+
+   <video controls src="https://github.com/user-attachments/assets/52fe77ba-2066-4ca5-b45c-beeb0814fcaf" title="Creating new docker network heavy-rental-network"></video>
 
 
 ## Setup Guide for Visual Studio Code
@@ -305,6 +308,7 @@ Precondition
 1. Visual Studio Code IDE is installed
 2. Remote Development Extension is installed into Visual Studio Code IDE
 3. Container Tools Extension is installed into Visual Studio Code IDE
+4. You have created docker network heavy-rental-network
 
 
 ### Spring Boot REST API Project Setup Steps
@@ -368,7 +372,7 @@ Precondition
 1. Visual Studio Code IDE is installed
 2. Remote Development Extension is installed into Visual Studio Code IDE
 3. Container Tools Extension is installed into Visual Studio Code IDE
-
+4. You have created docker network heavy-rental-network
 
 
 ### Haystack + Fast API Project (Haystack-Fast-API) Project Setup Steps
@@ -427,7 +431,7 @@ Precondition
 1. Visual Studio Code IDE is installed
 2. Remote Development Extension is installed into Visual Studio Code IDE
 3. Container Tools Extension is installed into Visual Studio Code IDE
-
+4. You have created docker network heavy-rental-network
 
 ### React (Heavy Rental Web Portal) Project Setup Steps
 
