@@ -352,6 +352,52 @@ Objective: To create DevContainer for Spring Boot REST API project
       * Debugger for Java (vscjava.vscode-java-debug)
     * PostgreSQL (Extension ID: ms-ossdata.vscode-pgsql)
 
+### Haystack + Fast API Project (Haystack-Fast-API) Project Setup Steps
+
+Objective: To create DevContainer for Haystack + Fast API project
+
+
+1. Go to Visual Studio Code IDE
+![alt text](images/visual-studio-code-ide.png)
+
+2. Click on the ![alt text](images/plus-button.png) button to expand the Visual Studio Code Menu
+![alt text](images/expand-visual-studio-code-menu.png)
+
+3. The menu will appear from the top window of the Visual Studio Code IDE
+![alt text](images/visual-studio-code-menu.png)
+
+4. Select ![alt text](images/open-folder-in-container-option.png) to trigger the open window to find the project folder `.devcontainer`
+![alt text](images/finding-rest-api-project-folder.png)
+
+5. While the `Select Folder` window is still open from previous step 4, double click on the `Haystack-Fast-API` to navigate into the `Haystack-Fast-API` folder 
+![alt text](images/haystack-fast-api-project-folder.png)
+
+
+6. Click ![alt text](images/open-button-select-folder.png) button to start the process of creating `Haystack-Fast-API` devcontainer
+![alt text](images/haystack-fast-api-devcontainer-folder.png)
+
+
+7. You should expect to see this window and you should see the mini window at the right bottom showing the text `Connecting to Dev Container (show log)`
+![alt text](images/haystack-fast-api-devcontainer-creation-1.png)
+
+
+8. Click on the text `Connecting to Dev Container (show log)` to view the logs during the process of creating devcontainer
+![alt text](images/haystack-fast-api-devcontainer-creation-2.png)
+
+9. At the end of the process of creating devcontainer for `Haystack + Fast API`, you should be able to view the following extensions installed in your Dev Container within Visual Studio Code IDE.
+![alt text](images/haystack-fast-api-installed-extension.png)
+
+
+    The following visual studio code extension should be installed in the IDE:
+    * autopep8 (Extension ID: ms-python.autopep8)
+    * ESLint (Extension ID: dbaeumer.vscode-eslint)
+    * Pylance (Extension ID: ms-python.vscode-pylance)
+    * Python (Extension ID: ms-python.python)
+    * Python Debugger (Extension ID: ms-python.debugpy)
+    * Python Environments (Extension ID: ms-python.vscode-python-envs)
+
+
+
 ### React (Heavy Rental Web Portal) Project Setup Steps
 
 
@@ -367,4 +413,22 @@ Objective: To create DevContainer for Spring Boot REST API project
 4. Select ![alt text](images/open-folder-in-container-option.png) to trigger the open window to find the project folder `.devcontainer`
 ![alt text](images/finding-rest-api-project-folder.png)
 
+5. While the `Select Folder` window is still open from previous step 4, double click on the `Heavy-Rental-Web-Portal` to navigate into the `Heavy-Rental-Web-Portal` folder
+![alt text](images/react-heavy-rental-web-portal-devcontainer-folder.png)
 
+6. Click ![alt text](images/open-button-select-folder.png) button to start the process of creating `Heavy-Rental-Web-Portal` devcontainer
+![alt text](images/react-heavy-rental-web-portal-devcontainer-folder-2.png)
+
+![alt text](image.png)
+
+
+![alt text](image-1.png)
+
+![alt text](image-2.png)
+
+
+
+
+
+
+![alt text](image-3.png)
