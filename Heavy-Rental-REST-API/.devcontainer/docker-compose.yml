@@ -1,60 +1,94 @@
 volumes:
-  postgres-data:
+  postgres-primary-data:
+  postgres-replica-one-data:
   heavy-rental-rest-api-data:
-
 
 services:
   heavy-rental-rest-api:
     container_name: heavy-rental-rest-api
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     environment:
-      # NOTE: POSTGRES_DB/USER/PASSWORD should match values in db container
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_USER: postgres
-        POSTGRES_DB: postgres
-        POSTGRES_HOSTNAME: db
-
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: heavy_rental
+      POSTGRES_HOSTNAME: db-primary
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-primary:5432/heavy_rental
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
     volumes:
       - heavy-rental-rest-api-data:/workspaces/heavy-rental-rest-api
-      
-    # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
-
-    # Use proper Docker networking instead of network_mode: service:db
-    # to ensure reliable DNS resolution in all environments
     depends_on:
-      db:
+      db-primary:
         condition: service_healthy
     networks:
       - heavy-rental-network
 
-    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
-
-  db:
-    container_name: postgresdb
-    image: postgres:latest
+  db-primary:
+    container_name: postgres-primary
+    image: postgres:17
     restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: heavy_rental
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-primary-data:/var/lib/postgresql/data
+      - ./postgres/primary/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres/primary/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./postgres/primary/init-primary.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c hba_file=/etc/postgresql/pg_hba.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d heavy_rental"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      heavy-rental-network:
+        aliases:
+          - db
+
+  db-replica-one:
+    container_name: postgres-replica-one
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: heavy_rental
+      REPLICATION_USER: replicator
+      REPLICATION_PASSWORD: replicatorpass
+      PRIMARY_HOST: db-primary
+      PRIMARY_PORT: "5432"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-replica-one-data:/var/lib/postgresql/data
+      - ./postgres/replica/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres/replica/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./postgres/replica/init-secondary.sh:/usr/local/bin/init-replica.sh:ro
+    command:
+      - bash
+      - /usr/local/bin/init-replica.sh
+    depends_on:
+      db-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d heavy_rental"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - heavy-rental-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    volumes:
-      - postgres-data:/var/lib/postgresql
-    environment:
-      # NOTE: POSTGRES_DB/USER/PASSWORD should match values in app container
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
-
-    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
 
 networks:
   heavy-rental-network:
