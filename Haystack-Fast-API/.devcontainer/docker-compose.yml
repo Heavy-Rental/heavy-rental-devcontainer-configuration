@@ -1,32 +1,94 @@
+# Spec: specs/001-haystack-postgres-merge-sync/
+# OpenSpec: openspec/changes/add-haystack-postgres-merge-sync/
 volumes:
   haystack-fast-api-data:
-
+  postgres-haystack-data:
 
 services:
   haystack-fast-api:
     container_name: haystack-fast-api
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
-
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: heavy_rental
+      POSTGRES_HOSTNAME: db
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/heavy_rental
     volumes:
       - haystack-fast-api-data:/workspaces/haystack-fast-api
-      
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
-
-    # Use proper Docker networking instead of network_mode: service:db
-    # to ensure reliable DNS resolution in all environments
-    #depends_on:
-    #  db:
-    #    condition: service_healthy
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - heavy-rental-network
 
-    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
+  # Writable local Postgres (Haystack R/W). Host 5434 avoids REST API 5432/5433.
+  db:
+    container_name: postgres-haystack
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: heavy_rental
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-haystack-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d heavy_rental"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - heavy-rental-network
 
-
+  # Merge-upsert from REST API postgres-primary every 24h (see scripts/sync-from-primary.sh).
+  # Halt by default when primary cannot be detected (restart: "no").
+  db-sync:
+    container_name: postgres-haystack-sync
+    image: postgres:17
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SOURCE_HOST: postgres-primary
+      SOURCE_PORT: "5432"
+      SOURCE_USER: postgres
+      SOURCE_PASSWORD: postgres
+      SOURCE_DB: heavy_rental
+      TARGET_HOST: db
+      TARGET_PORT: "5432"
+      TARGET_USER: postgres
+      TARGET_PASSWORD: postgres
+      TARGET_DB: heavy_rental
+      STAGING_SCHEMA: primary_snapshot
+      SYNC_INTERVAL_SECONDS: "86400"
+      HALT_ON_PRIMARY_UNAVAILABLE: "true"
+      PRIMARY_CHECK_RETRIES: "5"
+      PRIMARY_CHECK_DELAY_SECONDS: "3"
+      SCHEMA_EVOLUTION: "true"
+      ALLOW_UNIQUE_MERGE_KEY: "true"
+      # Sandbox defaults: merge mode keeps local-only cols/rows. Opt-in parity flags off.
+      # SYNC_MODE=mirror enables DROP_ORPHAN_COLUMNS, SAFE_TYPE_WIDENINGS, SYNC_INDEXES, SYNC_UNIQUE_INDEXES, SYNC_FOREIGN_KEYS.
+      SOURCE_SCHEMAS: public
+      SYNC_MODE: merge
+      DROP_ORPHAN_COLUMNS: "false"
+      SYNC_INDEXES: "false"
+      SYNC_UNIQUE_INDEXES: "false"
+      SAFE_TYPE_WIDENINGS: "false"
+      SYNC_FOREIGN_KEYS: "false"
+    volumes:
+      - ./scripts/sync-from-primary.sh:/usr/local/bin/sync-from-primary.sh:ro
+    entrypoint: ["/bin/bash", "/usr/local/bin/sync-from-primary.sh"]
+    restart: "no"
+    networks:
+      - heavy-rental-network
 
 networks:
   heavy-rental-network:

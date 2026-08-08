@@ -8,20 +8,45 @@
 	"shutdownAction": "stopCompose",
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
-	
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "python --version",
-		
-	"postCreateCommand": "sudo chown -R vscode /workspaces/haystack-fast-api",
+	// Local Haystack Postgres is published on host 5434 (see docker-compose.yml).
+	"forwardPorts": [5434],
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+	// Use 'postCreateCommand' to run commands after the container is created (rebuild/create only, not every start).
+	"postCreateCommand": "sudo chown -R vscode:vscode /workspaces/haystack-fast-api && curl -LsSf https://astral.sh/uv/install.sh | sh",
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
-	// assign non-root user 
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-ossdata.vscode-pgsql"
+			],
+			"settings": {
+				"pgsql.connections": [
+					{
+						"profileName": "Haystack Local (R/W)",
+						"host": "db",
+						"port": 5432,
+						"database": "heavy_rental",
+						"user": "postgres",
+						"password": "postgres",
+						"authenticationType": "SqlLogin",
+						"savePassword": true
+					},
+					{
+						"profileName": "REST API Primary (source)",
+						"host": "postgres-primary",
+						"port": 5432,
+						"database": "heavy_rental",
+						"user": "postgres",
+						"password": "postgres",
+						"authenticationType": "SqlLogin",
+						"savePassword": true
+					}
+				]
+			}
+		}
+	},
+
+	// assign non-root user
 	"remoteUser": "vscode"
 }
