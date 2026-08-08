@@ -1,0 +1,224 @@
+# Haystack Devcontainer Specification
+
+## Purpose
+
+Behavior of the **Haystack Fast API** development container stack as configured in this repository (`Haystack-Fast-API/.devcontainer`). This is the OpenSpec **source of truth** for current agreed behavior.
+
+The stack includes a **writable local PostgreSQL** database and a **merge-sync** job that periodically upserts data from the REST API primary (`postgres-primary` / `heavy_rental`).
+
+**Default policy (sandbox merge):** additive schema evolution, PK or unique merge keys, retain local-only rows/columns, halt if primary unreachable, 24h schedule. **Opt-in parity** flags and `SYNC_MODE=mirror` can enable drops, secondary indexes, and safe type widenings (see requirements below). Only the **`public`** schema is merged today.
+
+Change history: original package under `openspec/changes/archive/2026-08-08-add-haystack-postgres-merge-sync/`. Spec Kit twin: `specs/001-haystack-postgres-merge-sync/`.
+
+## Requirements
+
+### Requirement: Devcontainer Compose stack
+
+The Haystack Fast API development environment MUST start via Docker Compose using `Haystack-Fast-API/.devcontainer/docker-compose.yml`, attach to the external network `heavy-rental-network`, and include the application service, local database service, and sync service.
+
+#### Scenario: Stack services
+
+- **GIVEN** this configuration is deployed
+- **WHEN** a developer inspects Compose services
+- **THEN** `haystack-fast-api`, `db`, and `db-sync` are defined
+- **AND** all join `heavy-rental-network`
+
+#### Scenario: App service joins shared network
+
+- **GIVEN** the external network `heavy-rental-network` exists
+- **WHEN** the Haystack Compose stack is started
+- **THEN** the `haystack-fast-api` service is attached to `heavy-rental-network`
+
+### Requirement: Workspace ownership on create
+
+The devcontainer MUST run a post-create command that ensures the workspace directory is owned by the non-root `vscode` user and MAY install developer tooling (e.g. `uv`) on container create/rebuild.
+
+#### Scenario: Rebuild installs tooling
+
+- **GIVEN** a new or rebuilt Haystack devcontainer
+- **WHEN** `postCreateCommand` completes
+- **THEN** workspace ownership is corrected for `vscode` and configured install steps have run
+
+### Requirement: Local writable database
+
+The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fully writable and persists data in a dedicated Docker volume. The Haystack application service MUST use this local database as its default read/write data source.
+
+#### Scenario: Local database accepts writes
+
+- **GIVEN** the Haystack stack is running and the local database service is healthy
+- **WHEN** a client connects with the configured local credentials to database `heavy_rental`
+- **THEN** the client can insert, update, select, and delete rows
+- **AND** the instance is not a read-only standby (`pg_is_in_recovery()` is false)
+
+#### Scenario: Application uses local database
+
+- **GIVEN** the `haystack-fast-api` service is configured via environment
+- **WHEN** the application opens its default database connection
+- **THEN** it connects to the local Compose database service (not `postgres-primary`)
+
+### Requirement: Shared network reachability to REST API primary
+
+The local database and sync components MUST join external network `heavy-rental-network` so they can reach container `postgres-primary` when the REST API stack is running.
+
+#### Scenario: Source host resolution
+
+- **GIVEN** both stacks are attached to `heavy-rental-network` and primary is running
+- **WHEN** the sync process resolves `postgres-primary`
+- **THEN** a TCP connection to port 5432 succeeds for connectivity checks
+
+### Requirement: Merge sync from REST API primary
+
+The system MUST provide a sync process that merge-refreshes data from `postgres-primary` database `heavy_rental` into the local database using upserts. The merge key MUST be the table **primary key** when present; otherwise a usable **unique** constraint (or unique non-partial index) when unique-key merge is enabled. Primary MUST win on key conflicts. Local-only rows MUST be retained. Default behavior MUST NOT wipe local application tables.
+
+#### Scenario: Source rows appear locally
+
+- **GIVEN** primary is reachable and contains rows in mergeable tables
+- **WHEN** a successful sync cycle completes
+- **THEN** those rows are present locally (inserted if new, updated if same merge key)
+
+#### Scenario: Local-only rows retained
+
+- **GIVEN** a row exists only on the local database for a merge key not present on primary
+- **WHEN** a successful sync cycle completes
+- **THEN** that row still exists locally
+
+#### Scenario: Shared key primary wins
+
+- **GIVEN** the same merge key exists on primary and local with different non-key values
+- **WHEN** a successful sync cycle completes
+- **THEN** local non-key values match primary
+
+#### Scenario: Primary deletes not mirrored
+
+- **GIVEN** a row was removed on primary but still exists locally
+- **WHEN** a successful sync cycle completes
+- **THEN** the local row is not required to be deleted
+
+#### Scenario: Unique-key merge without primary key
+
+- **GIVEN** a source table has no primary key but has a unique constraint on one or more columns
+- **WHEN** a successful sync cycle completes with unique-key merge enabled
+- **THEN** the table is merged using that unique key (not skipped solely for lack of a PK)
+
+### Requirement: Additive schema evolution
+
+When schema evolution is enabled (default), the sync process MUST create missing local tables from source and MUST **add** columns that exist on the source but not on an existing local table before upserting. Under default merge mode the process MUST NOT drop local columns, rename columns, or apply non-whitelisted type changes. Opt-in flags may enable drops or safe type widenings.
+
+#### Scenario: New column on primary is added locally
+
+- **GIVEN** a local table already exists and primary adds a new column with data
+- **WHEN** a successful sync cycle completes with schema evolution enabled
+- **THEN** the local table has the new column and upserted rows include source values for that column
+
+#### Scenario: Local-only columns retained
+
+- **GIVEN** a local table has a column that does not exist on primary
+- **WHEN** a successful sync cycle completes with default merge mode (`DROP_ORPHAN_COLUMNS` false)
+- **THEN** the local-only column remains
+
+### Requirement: Opt-in schema parity flags
+
+The sync process MUST support opt-in flags that are **off by default** so sandbox merge remains safe:
+
+- `DROP_ORPHAN_COLUMNS` — drop local columns absent on primary (data loss)
+- `SYNC_INDEXES` / `SYNC_UNIQUE_INDEXES` — create secondary indexes from primary
+- `SAFE_TYPE_WIDENINGS` — apply only whitelisted type widenings
+- `SYNC_FOREIGN_KEYS` — reserved; when true, implementation MUST log that FK sync is not available until implemented
+- `SOURCE_SCHEMAS` — documented; current implementation supports **`public` only**
+- `SYNC_MODE=mirror` — enables drop, type widen, index, and FK flags (FK still not implemented)
+
+#### Scenario: Default merge does not drop local columns
+
+- **GIVEN** default configuration (`SYNC_MODE=merge`, `DROP_ORPHAN_COLUMNS=false`)
+- **WHEN** primary no longer has a column that still exists locally
+- **THEN** the local column is not dropped
+
+#### Scenario: Opt-in index sync
+
+- **GIVEN** `SYNC_INDEXES=true` and primary has a non-unique secondary index
+- **WHEN** a successful sync cycle completes
+- **THEN** the index is created on the local table if missing (best-effort; failures logged)
+
+#### Scenario: Mirror mode enables parity flags
+
+- **GIVEN** `SYNC_MODE=mirror`
+- **WHEN** the sync process starts
+- **THEN** drop-orphan, safe type widenings, and index sync flags are treated as enabled (FK flag may be set but FK creation remains unimplemented)
+
+### Requirement: Connectivity check before merge
+
+Before modifying local application data, the sync process MUST detect whether `postgres-primary` is available, with configurable retries.
+
+#### Scenario: Successful detection
+
+- **GIVEN** primary accepts connections with configured credentials
+- **WHEN** the sync process runs its connectivity check
+- **THEN** the check succeeds and a merge cycle may proceed
+
+#### Scenario: Failed detection after retries
+
+- **GIVEN** primary is stopped or unreachable
+- **WHEN** retries are exhausted
+- **THEN** the process treats the source as unavailable and MUST NOT merge application tables in that cycle
+
+### Requirement: Halt on primary unavailability
+
+When the source is unavailable and halt mode is enabled (default), the sync process MUST leave local application data unchanged and MUST stop further scheduled merges for that process lifetime.
+
+#### Scenario: Default halt
+
+- **GIVEN** `HALT_ON_PRIMARY_UNAVAILABLE` is true (default) and primary cannot be detected
+- **WHEN** the sync process evaluates connectivity
+- **THEN** it logs a halt condition
+- **AND** it does not modify local application tables
+- **AND** the sync job stops scheduling further cycles
+
+#### Scenario: Local database remains usable after halt
+
+- **GIVEN** the sync job has halted
+- **WHEN** the developer uses the Haystack app or `psql` against the local database
+- **THEN** read and write operations still succeed
+
+### Requirement: Skip cycle when halt disabled
+
+When the source is unavailable and halt mode is disabled, the sync process MUST skip the merge, leave local data intact, wait for the configured interval, and retry.
+
+#### Scenario: Skip and wait
+
+- **GIVEN** `HALT_ON_PRIMARY_UNAVAILABLE` is false and primary cannot be detected
+- **WHEN** the sync process evaluates connectivity
+- **THEN** it logs a skip
+- **AND** it sleeps for `SYNC_INTERVAL_SECONDS`
+- **AND** it attempts another cycle afterward
+
+### Requirement: Scheduled refresh every 24 hours
+
+The sync process MUST attempt a merge cycle when it starts (after local DB readiness) and MUST wait 24 hours by default between subsequent attempts. The interval MUST be overridable via environment configuration.
+
+#### Scenario: Initial attempt at start
+
+- **GIVEN** the sync service starts and the local database is ready
+- **WHEN** initialization completes
+- **THEN** the process attempts a connectivity check and merge (or halt/skip) before the first full interval sleep
+
+#### Scenario: Default interval
+
+- **GIVEN** default configuration
+- **WHEN** a cycle attempt finishes
+- **THEN** the next attempt is scheduled after 86400 seconds
+
+#### Scenario: Custom interval
+
+- **GIVEN** `SYNC_INTERVAL_SECONDS` is set to a positive integer N
+- **WHEN** a cycle attempt finishes
+- **THEN** the next attempt is scheduled after N seconds
+
+### Requirement: Operational logging
+
+The sync process MUST log cycle outcomes including connectivity result, halt, skip, merge success/failure, and tables skipped (e.g. missing primary key).
+
+#### Scenario: Operator can diagnose halt
+
+- **GIVEN** primary is unavailable and halt mode is enabled
+- **WHEN** the operator reads sync container logs
+- **THEN** the logs clearly state that primary could not be detected and that the job is halting
