@@ -8,7 +8,7 @@ The stack includes a **writable local PostgreSQL** database and a **merge-sync**
 
 **Default policy (sandbox merge):** additive schema evolution, PK or unique merge keys, retain local-only rows/columns, halt if primary unreachable, 24h schedule. **Opt-in parity** flags and `SYNC_MODE=mirror` can enable drops, secondary indexes, and safe type widenings (see requirements below). Only the **`public`** schema is merged today.
 
-**Neo4j:** local Community 5 instance for Haystack DocumentStore (`neo4j-haystack`), complementary to Postgres. Devcontainer installs the **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) for Cypher/Bolt in the IDE (Browser remains on port 7474).
+**Neo4j:** local Community 5 instance for Haystack DocumentStore (`neo4j-haystack`), complementary to Postgres. Devcontainer installs the **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) for Cypher/Bolt in the IDE (Browser remains on port 7474). IDE connections are UI-managed (not a `pgsql.connections`-style settings array).
 
 **FAISS:** in-process FAISSDocumentStore (`faiss-haystack`) with workspace index path env; no separate FAISS Compose service. Complements Neo4j and Postgres.
 
@@ -17,6 +17,7 @@ Change history:
 - `openspec/changes/archive/2026-08-08-add-haystack-neo4j/`
 - `openspec/changes/archive/2026-08-09-add-haystack-faiss/`
 - `openspec/changes/archive/2026-08-09-add-neo4j-vscode-extension/`
+- `openspec/changes/archive/2026-08-09-document-neo4j-vscode-ui-connections/`
 
 Spec Kit: `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`, `specs/003-haystack-faiss/`.
 
@@ -67,13 +68,23 @@ The Haystack Compose stack MUST include a Neo4j 5 Community service on `heavy-re
 
 ### Requirement: Neo4j VS Code extension
 
-The Haystack Fast API `devcontainer.json` MUST list the official Neo4j for VS Code extension (`neo4j-extensions.neo4j-for-vscode`) under `customizations.vscode.extensions` so developers get Cypher/Bolt tooling in the IDE. Neo4j Browser on port 7474 remains available and is NOT replaced by the extension. Spec Kit docs MUST document connection parameters for use inside the container (`bolt://neo4j:7687`, dev credentials).
+The Haystack Fast API `devcontainer.json` MUST list the official Neo4j for VS Code extension (`neo4j-extensions.neo4j-for-vscode`) under `customizations.vscode.extensions` so developers get Cypher/Bolt tooling in the IDE. Neo4j Browser on port 7474 remains available and is NOT replaced by the extension.
+
+Unlike Postgres (`pgsql.connections`), this extension does **not** support preconfigured connection profiles in workspace/`devcontainer.json` settings. Connections are created in the extension UI (sidebar / Command Palette) and stored in extension global state and SecretStorage. Spec Kit docs MUST document the recommended **Haystack Local Neo4j** connection parameters for use inside the container (`bolt` / host `neo4j` / port `7687` / user `neo4j` / password `heavyrental` / database `neo4j`).
+
+The devcontainer MAY set only the extension’s supported settings keys (e.g. `neo4j.features.linting`, `neo4j.trace.server`). It MUST NOT invent a settings array such as `neo4j.connections` that the extension ignores.
 
 #### Scenario: Extension configured for install
 
 - **GIVEN** `Haystack-Fast-API/.devcontainer/devcontainer.json`
 - **WHEN** a developer inspects `customizations.vscode.extensions`
 - **THEN** `neo4j-extensions.neo4j-for-vscode` is present (alongside the Postgres extension)
+
+#### Scenario: Connection is UI-managed, not settings profiles
+
+- **GIVEN** the official Neo4j for VS Code extension
+- **WHEN** a developer looks for a `pgsql.connections`-style settings array for Neo4j
+- **THEN** no such supported key exists; they MUST use **Neo4j: Create new connection** (or the Connections pane) with the documented Haystack values
 
 ### Requirement: FAISS local vector store for Haystack
 

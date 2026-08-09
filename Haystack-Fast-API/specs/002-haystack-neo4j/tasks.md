@@ -7,4 +7,5 @@
 - [x] T005 OpenSpec change + merge SoT + archive
 - [x] T006 Verification runbook
 - [x] T008 Add Neo4j for VS Code extension + Spec Kit / OpenSpec docs
+- [x] T009 Document UI-managed connections (no pgsql-style settings profiles) + supported neo4j.* settings
 - [ ] T007 Operator runtime verification (see verification.md; includes extension install after rebuild)

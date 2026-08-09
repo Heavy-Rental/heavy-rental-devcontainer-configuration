@@ -50,12 +50,13 @@ As a developer, Neo4j does not replace Postgres; both run for domain SQL and Hay
 
 As a Haystack developer, the devcontainer preinstalls the official **Neo4j for VS Code** extension so I can connect over Bolt and run Cypher without leaving the IDE (Neo4j Browser on 7474 remains available).
 
-**Independent Test**: `devcontainer.json` lists `neo4j-extensions.neo4j-for-vscode`; after rebuild, the extension is available; connect with documented credentials.
+**Independent Test**: `devcontainer.json` lists `neo4j-extensions.neo4j-for-vscode`; after rebuild, the extension is available; create connection via UI with documented credentials.
 
 **Acceptance Scenarios**:
 
 1. **Given** `Haystack-Fast-API/.devcontainer/devcontainer.json`, **When** I inspect `customizations.vscode.extensions`, **Then** `neo4j-extensions.neo4j-for-vscode` is present.
-2. **Given** Neo4j is healthy and I am in the app container network, **When** I connect the extension with URI `bolt://neo4j:7687` and dev credentials, **Then** a simple Cypher query can succeed.
+2. **Given** Neo4j is healthy and I am in the app container network, **When** I create a connection via the extension UI with host `neo4j`, port `7687`, and dev credentials, **Then** a simple Cypher query can succeed.
+3. **Given** I compare to Postgres tooling, **When** I look for a settings-based Neo4j connection profile array, **Then** none is required or supported; Spec Kit documents the UI flow instead.
 
 ## Edge Cases
 
@@ -75,7 +76,8 @@ As a Haystack developer, the devcontainer preinstalls the official **Neo4j for V
 - **FR-007**: Docs MUST describe installing `neo4j-haystack` with `uv` for Haystack DocumentStore usage.
 - **FR-008**: Postgres services MUST remain available; Neo4j does not replace them.
 - **FR-009**: Devcontainer MUST list `neo4j-extensions.neo4j-for-vscode` under `customizations.vscode.extensions`.
-- **FR-010**: Docs MUST describe connecting Neo4j for VS Code (and Browser) with the documented Bolt URL and dev credentials.
+- **FR-010**: Docs MUST describe connecting Neo4j for VS Code (and Browser) with the documented Bolt URL and dev credentials via the **UI** (not a settings profile array).
+- **FR-011**: Devcontainer MUST NOT invent unsupported settings such as `neo4j.connections`; MAY set only extension-declared keys (`neo4j.features.linting`, `neo4j.trace.server`).
 
 ### Key Entities
 

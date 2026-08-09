@@ -34,7 +34,11 @@
 | Attribute | Value |
 |---|---|
 | Extension ID | `neo4j-extensions.neo4j-for-vscode` |
-| Configured in | `.devcontainer/devcontainer.json` → `customizations.vscode.extensions` |
+| Installed via | `.devcontainer/devcontainer.json` → `customizations.vscode.extensions` |
+| Connection storage | Extension globalState + SecretStorage (**not** workspace settings) |
+| Supported settings | `neo4j.features.linting`, `neo4j.trace.server` only |
+| Unsupported | `neo4j.connections` (or any pgsql-style profile array) |
+| Recommended profile name | Haystack Local Neo4j |
 | Bolt (in container) | `bolt://neo4j:7687` |
 | Bolt (from host) | `bolt://localhost:7687` |
 | Auth | same as `NEO4J_AUTH` / app `NEO4J_*` |

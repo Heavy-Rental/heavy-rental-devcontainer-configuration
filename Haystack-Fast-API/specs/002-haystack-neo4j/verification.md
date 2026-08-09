@@ -57,19 +57,26 @@ Open `http://localhost:7474` (or forwarded port).
 ```bash
 grep -n 'neo4j-extensions.neo4j-for-vscode' \
   Haystack-Fast-API/.devcontainer/devcontainer.json
+grep -n 'neo4j.features.linting\|neo4j.trace.server' \
+  Haystack-Fast-API/.devcontainer/devcontainer.json
+# Must NOT invent unsupported profile arrays:
+! grep -n 'neo4j.connections' Haystack-Fast-API/.devcontainer/devcontainer.json
 ```
 
-**Expect:** extension ID present under `customizations.vscode.extensions`.
+**Expect:** extension ID present; supported settings present; no `neo4j.connections` array.
 
-**Manual (after rebuild):** open Neo4j for VS Code → connect with:
+**Manual (after rebuild):** connections are **not** auto-seeded like `pgsql.connections`.
+
+1. Command Palette → **Neo4j: Create new connection** (or Neo4j sidebar **+**).
+2. Profile **Haystack Local Neo4j**:
 
 | Field | Inside container |
 |---|---|
-| URI | `bolt://neo4j:7687` |
+| Scheme / host / port | `bolt` / `neo4j` / `7687` |
 | User / Password | `neo4j` / `heavyrental` |
 | Database | `neo4j` |
 
-Run `RETURN 1` (or equivalent) and confirm success.
+3. Connect and run `RETURN 1`.
 
 ## 5. Install neo4j-haystack (US3)
 

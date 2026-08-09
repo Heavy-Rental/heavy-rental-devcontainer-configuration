@@ -38,6 +38,10 @@ Postgres continues to hold relational rental domain data (with optional merge fr
 | Client | Role |
 |---|---|
 | Neo4j Browser (`:7474`) | Full web UI shipped with Neo4j container |
-| **Neo4j for VS Code** (`neo4j-extensions.neo4j-for-vscode`) | Cypher/Bolt in the IDE; preinstalled via `devcontainer.json` |
+| **Neo4j for VS Code** (`neo4j-extensions.neo4j-for-vscode`) | Cypher/Bolt in the IDE; installed via `devcontainer.json` |
 
 Both use the same Bolt endpoint and dev credentials. Extension does not replace Browser.
+
+### Why no `pgsql.connections`-style Neo4j settings
+
+Official extension settings only include linting/trace. Connections are created in the UI and stored in extension **globalState** (`connections`) and **SecretStorage** (passwords). Seeding that storage from the host is fragile and out of scope. Developers create **Haystack Local Neo4j** once via **Neo4j: Create new connection**.
