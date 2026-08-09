@@ -1,0 +1,34 @@
+# Research: Haystack Neo4j
+
+## Why Neo4j with Haystack
+
+Official **neo4j-haystack** integration provides `Neo4jDocumentStore` for Haystack v2, using Neo4j vector indexes for embeddings and retrieval—aligned with RAG / document pipelines.
+
+## Alternatives considered
+
+| Option | Notes |
+|---|---|
+| In-memory / local file stores | Fine for unit tests; not shared persistent graph |
+| Postgres only (pgvector) | Good for vectors; weaker native graph traversals |
+| Neo4j Aura | Cloud; extra account; not offline-friendly for this devcontainer |
+| **Local Neo4j Compose** | Best fit for heavy-rental local multi-service network |
+
+**Decision**: Local Neo4j 5 Community in Haystack Compose.
+
+## Package
+
+- `pip install neo4j-haystack` / `uv add neo4j-haystack`
+- Import: `from neo4j_haystack import Neo4jDocumentStore`
+- URL form: `bolt://neo4j:7687` inside Compose network
+
+## Auth
+
+Neo4j 5 requires auth. Compose `NEO4J_AUTH=neo4j/<password>` sets initial credentials non-interactively for dev.
+
+## APOC / GDS
+
+Not enabled by default. APOC can be added later via `NEO4J_PLUGINS` if pipelines need procedures. GDS is enterprise-oriented and out of scope for community dev defaults.
+
+## Relationship to Postgres
+
+Postgres continues to hold relational rental domain data (with optional merge from REST API primary). Neo4j holds Haystack documents/embeddings/graph structure. No automatic ETL between them in this feature.

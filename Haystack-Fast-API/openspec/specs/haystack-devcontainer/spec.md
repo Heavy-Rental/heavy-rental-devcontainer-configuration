@@ -8,19 +8,28 @@ The stack includes a **writable local PostgreSQL** database and a **merge-sync**
 
 **Default policy (sandbox merge):** additive schema evolution, PK or unique merge keys, retain local-only rows/columns, halt if primary unreachable, 24h schedule. **Opt-in parity** flags and `SYNC_MODE=mirror` can enable drops, secondary indexes, and safe type widenings (see requirements below). Only the **`public`** schema is merged today.
 
-Change history: original package under `openspec/changes/archive/2026-08-08-add-haystack-postgres-merge-sync/`. Spec Kit twin: `specs/001-haystack-postgres-merge-sync/`.
+**Neo4j:** local Community 5 instance for Haystack DocumentStore (`neo4j-haystack`), complementary to Postgres.
+
+**FAISS:** in-process FAISSDocumentStore (`faiss-haystack`) with workspace index path env; no separate FAISS Compose service. Complements Neo4j and Postgres.
+
+Change history:
+- `openspec/changes/archive/2026-08-08-add-haystack-postgres-merge-sync/`
+- `openspec/changes/archive/2026-08-08-add-haystack-neo4j/`
+- `openspec/changes/archive/2026-08-09-add-haystack-faiss/`
+
+Spec Kit: `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`, `specs/003-haystack-faiss/`.
 
 ## Requirements
 
 ### Requirement: Devcontainer Compose stack
 
-The Haystack Fast API development environment MUST start via Docker Compose using `Haystack-Fast-API/.devcontainer/docker-compose.yml`, attach to the external network `heavy-rental-network`, and include the application service, local database service, and sync service.
+The Haystack Fast API development environment MUST start via Docker Compose using `Haystack-Fast-API/.devcontainer/docker-compose.yml`, attach to the external network `heavy-rental-network`, and include the application service, local Postgres (`db` / `db-sync`), and Neo4j services.
 
 #### Scenario: Stack services
 
 - **GIVEN** this configuration is deployed
 - **WHEN** a developer inspects Compose services
-- **THEN** `haystack-fast-api`, `db`, and `db-sync` are defined
+- **THEN** `haystack-fast-api`, `db`, `db-sync`, and `neo4j` are defined
 - **AND** all join `heavy-rental-network`
 
 #### Scenario: App service joins shared network
@@ -39,9 +48,41 @@ The devcontainer MUST run a post-create command that ensures the workspace direc
 - **WHEN** `postCreateCommand` completes
 - **THEN** workspace ownership is corrected for `vscode` and configured install steps have run
 
+### Requirement: Neo4j graph store for Haystack
+
+The Haystack Compose stack MUST include a Neo4j 5 Community service on `heavy-rental-network` with a persistent volume, host-mapped Bolt (7687) and HTTP Browser (7474) ports, and documented dev authentication. The application service MUST expose `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`, and `NEO4J_DATABASE` for neo4j-haystack / driver clients. Neo4j MUST NOT replace Postgres as the relational domain store.
+
+#### Scenario: Neo4j service present
+
+- **GIVEN** the Haystack stack is started
+- **WHEN** services are inspected
+- **THEN** a healthy `neo4j` service (`neo4j-haystack`) exists alongside Postgres services
+
+#### Scenario: App connection env for Neo4j
+
+- **GIVEN** the app container is running
+- **WHEN** environment variables are read
+- **THEN** `NEO4J_URI` is `bolt://neo4j:7687` and credentials match Neo4j service auth
+
+### Requirement: FAISS local vector store for Haystack
+
+The Haystack application service MUST support in-process FAISSDocumentStore usage: install or document `faiss-haystack` (CPU), and expose `FAISS_INDEX_PATH` pointing at a writable path under the workspace volume. Optional `FAISS_EMBEDDING_DIM` and `FAISS_INDEX_STRING` MAY be provided as convenience defaults. A separate FAISS Compose service is NOT required. FAISS MUST NOT replace Postgres or Neo4j.
+
+#### Scenario: FAISS env present
+
+- **GIVEN** the app container is running
+- **WHEN** environment variables are read
+- **THEN** `FAISS_INDEX_PATH` is set to a path under `/workspaces/haystack-fast-api`
+
+#### Scenario: Package install path for faiss-haystack
+
+- **GIVEN** postCreate or documented install steps
+- **WHEN** a developer imports FAISSDocumentStore
+- **THEN** `from haystack_integrations.document_stores.faiss import FAISSDocumentStore` succeeds after following Spec Kit `003` install steps
+
 ### Requirement: Local writable database
 
-The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fully writable and persists data in a dedicated Docker volume. The Haystack application service MUST use this local database as its default read/write data source.
+The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fully writable and persists data in a dedicated Docker volume. The Haystack application service MUST use this local database as its default **relational** read/write data source (Haystack document/vector storage MAY use Neo4j and/or in-process FAISS).
 
 #### Scenario: Local database accepts writes
 

@@ -7,39 +7,38 @@ openspec/
 ├── specs/                         # Source of truth (current behavior)
 │   └── haystack-devcontainer/
 └── changes/
-    └── archive/                   # Completed change packages
-        └── 2026-08-08-add-haystack-postgres-merge-sync/
+    └── archive/
+        ├── 2026-08-08-add-haystack-postgres-merge-sync/
+        ├── 2026-08-08-add-haystack-neo4j/
+        └── 2026-08-09-add-haystack-faiss/
 ```
 
 ## Source of truth
 
-**[specs/haystack-devcontainer/spec.md](./specs/haystack-devcontainer/spec.md)** — agreed **current** behavior of the Haystack Fast API devcontainer:
+**[specs/haystack-devcontainer/spec.md](./specs/haystack-devcontainer/spec.md)** — agreed **current** behavior:
 
-- Writable local Postgres (`db` / `postgres-haystack`)
-- App `DATABASE_URL` → local `db`
-- Merge-sync from `postgres-primary` / `heavy_rental` (FDW upsert, 24h, halt/skip)
-- Unique-key merge when no PK; additive schema evolution (default)
-- Opt-in parity: drop orphan columns, secondary indexes, safe type widenings, `SYNC_MODE=mirror`
-- `public` schema only; FK sync reserved / not implemented
+- Writable local Postgres (`db` / `postgres-haystack`) + 24h merge-sync from `postgres-primary`
+- Unique-key merge, additive schema evolution, opt-in parity flags / `SYNC_MODE`
+- **Neo4j 5** (`neo4j` / `neo4j-haystack`) for Haystack DocumentStore (`neo4j-haystack` package)
+- **FAISS** in-process DocumentStore (`faiss-haystack` package) with `FAISS_INDEX_PATH` under the workspace volume
+- App env: `DATABASE_URL` (Postgres) + `NEO4J_*` (Bolt) + `FAISS_*` (local index path)
 
 ## Archived changes
 
 | Archive | Description |
 |---|---|
-| [2026-08-08-add-haystack-postgres-merge-sync](./changes/archive/2026-08-08-add-haystack-postgres-merge-sync/) | Initial local Postgres + 24h merge sync change package |
+| [2026-08-08-add-haystack-postgres-merge-sync](./changes/archive/2026-08-08-add-haystack-postgres-merge-sync/) | Local Postgres + merge sync |
+| [2026-08-08-add-haystack-neo4j](./changes/archive/2026-08-08-add-haystack-neo4j/) | Neo4j for Haystack |
+| [2026-08-09-add-haystack-faiss](./changes/archive/2026-08-09-add-haystack-faiss/) | FAISS DocumentStore for Haystack |
 
-Each archive keeps `proposal.md`, `design.md`, `tasks.md`, and historical **delta** specs.
+**Spec Kit:**
 
-Later enhancements (unique-key merge, additive evolution, opt-in flags) were folded into the **source of truth** above and Spec Kit docs without a second archive package.
-
-**Spec Kit twin (feature package):** [specs/001-haystack-postgres-merge-sync/](../specs/001-haystack-postgres-merge-sync/)
+- [specs/001-haystack-postgres-merge-sync/](../specs/001-haystack-postgres-merge-sync/)
+- [specs/002-haystack-neo4j/](../specs/002-haystack-neo4j/)
+- [specs/003-haystack-faiss/](../specs/003-haystack-faiss/)
 
 ### Running verification
 
-Runtime checks (SC-001–SC-007 + UK/EV/opt-in):
-
-**→ [specs/001-haystack-postgres-merge-sync/verification.md](../specs/001-haystack-postgres-merge-sync/verification.md)**
-
-Env contract:
-
-**→ [specs/001-haystack-postgres-merge-sync/contracts/db-sync-env.md](../specs/001-haystack-postgres-merge-sync/contracts/db-sync-env.md)**
+- Postgres merge: [001 verification](../specs/001-haystack-postgres-merge-sync/verification.md)
+- Neo4j: [002 verification](../specs/002-haystack-neo4j/verification.md)
+- FAISS: [003 verification](../specs/003-haystack-faiss/verification.md)
