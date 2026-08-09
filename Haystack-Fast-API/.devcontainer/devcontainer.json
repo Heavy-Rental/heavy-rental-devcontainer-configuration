@@ -8,20 +8,57 @@
 	"shutdownAction": "stopCompose",
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
-	
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "python --version",
-		
-	"postCreateCommand": "sudo chown -R vscode /workspaces/haystack-fast-api",
+	// 5434 Postgres host map; 7474 Neo4j Browser; 7687 Neo4j Bolt
+	// FAISS is in-process (no host port) — see specs/003-haystack-faiss/
+	"forwardPorts": [5434, 7474, 7687],
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+	// postCreate: workspace ownership, uv, DocumentStore packages (neo4j-haystack + faiss-haystack)
+	"postCreateCommand": "sudo chown -R vscode:vscode /workspaces/haystack-fast-api && curl -LsSf https://astral.sh/uv/install.sh | sh && export PATH=\"$HOME/.local/bin:$PATH\" && (uv pip install neo4j-haystack faiss-haystack || pip install --user neo4j-haystack faiss-haystack || true) && mkdir -p /workspaces/haystack-fast-api/.faiss",
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
-	// assign non-root user 
+	"customizations": {
+		"vscode": {
+			// Postgres client + Neo4j for VS Code (Bolt/Cypher; Browser still at http://localhost:7474)
+			"extensions": [
+				"ms-ossdata.vscode-pgsql",
+				"neo4j-extensions.neo4j-for-vscode"
+			],
+			"settings": {
+				// Postgres: settings-based connection profiles (supported by vscode-pgsql)
+				"pgsql.connections": [
+					{
+						"profileName": "Haystack Local (R/W)",
+						"host": "db",
+						"port": 5432,
+						"database": "heavy_rental",
+						"user": "postgres",
+						"password": "postgres",
+						"authenticationType": "SqlLogin",
+						"savePassword": true
+					},
+					{
+						"profileName": "REST API Primary (source)",
+						"host": "postgres-primary",
+						"port": 5432,
+						"database": "heavy_rental",
+						"user": "postgres",
+						"password": "postgres",
+						"authenticationType": "SqlLogin",
+						"savePassword": true
+					}
+				],
+				// Neo4j for VS Code: ONLY these keys are supported in settings.
+				// Connections are UI-managed (sidebar / "Neo4j: Create new connection"),
+				// not via a pgsql-style connections array. Recommended profile:
+				//   name: Haystack Local Neo4j | scheme: bolt | host: neo4j | port: 7687
+				//   user: neo4j | password: heavyrental | database: neo4j
+				// Host/port-forward alternative: bolt://localhost:7687 (same auth).
+				"neo4j.features.linting": true,
+				"neo4j.trace.server": "off"
+			}
+		}
+	},
+
+	// assign non-root user
 	"remoteUser": "vscode"
 }
