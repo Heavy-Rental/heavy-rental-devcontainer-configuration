@@ -1,0 +1,50 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/java-postgres
+{
+	"name": "Heavy Rental Java REST API",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "heavy-rental-rest-api",
+	"workspaceFolder": "/workspaces/heavy-rental-rest-api",
+	"shutdownAction": "stopCompose",
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {}
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// This can be used to network with other containers or with the host.
+	"forwardPorts": [
+		8080,
+		5432
+	],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "sudo chown -R vscode:vscode /workspaces/heavy-rental-rest-api",
+	"postStartCommand": "echo 'Dev container ready'",
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "java -version",
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"vscjava.vscode-java-pack",
+				"vmware.vscode-boot-dev-pack",
+				"ms-ossdata.vscode-pgsql"
+			],
+			"settings": {
+				"java.configuration.updateBuildConfiguration": "automatic",
+				"pgsql.connections": [
+					{
+						"profileName": "heavy-rental-rest-api-db-connection",
+						"host": "db-primary",
+						"port": 5432,
+						"database": "heavy_rental",
+						"user": "postgres",
+						"password": "postgres",
+						"authenticationType": "SqlLogin",
+						"savePassword": true
+					}
+				]
+			}
+		}
+	},
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// assign non-root user 
+	"remoteUser": "vscode"
+}

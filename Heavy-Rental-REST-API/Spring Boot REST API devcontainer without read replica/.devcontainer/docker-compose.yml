@@ -1,0 +1,55 @@
+volumes:
+  postgres-primary-data:
+  postgres-replica-one-data:
+  heavy-rental-rest-api-data:
+
+services:
+  heavy-rental-rest-api:
+    container_name: heavy-rental-rest-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: heavy_rental
+      POSTGRES_HOSTNAME: db-primary
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-primary:5432/heavy_rental
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    volumes:
+      - heavy-rental-rest-api-data:/workspaces/heavy-rental-rest-api
+    command: sleep infinity
+    depends_on:
+      db-primary:
+        condition: service_healthy
+    networks:
+      - heavy-rental-network
+
+  db-primary:
+    container_name: postgres-primary
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: heavy_rental
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-primary-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d heavy_rental" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      heavy-rental-network:
+        aliases:
+          - db
+
+networks:
+  heavy-rental-network:
+    external: true
+    driver: bridge
