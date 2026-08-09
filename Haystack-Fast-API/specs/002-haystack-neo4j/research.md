@@ -32,3 +32,12 @@ Not enabled by default. APOC can be added later via `NEO4J_PLUGINS` if pipelines
 ## Relationship to Postgres
 
 Postgres continues to hold relational rental domain data (with optional merge from REST API primary). Neo4j holds Haystack documents/embeddings/graph structure. No automatic ETL between them in this feature.
+
+## IDE clients
+
+| Client | Role |
+|---|---|
+| Neo4j Browser (`:7474`) | Full web UI shipped with Neo4j container |
+| **Neo4j for VS Code** (`neo4j-extensions.neo4j-for-vscode`) | Cypher/Bolt in the IDE; preinstalled via `devcontainer.json` |
+
+Both use the same Bolt endpoint and dev credentials. Extension does not replace Browser.

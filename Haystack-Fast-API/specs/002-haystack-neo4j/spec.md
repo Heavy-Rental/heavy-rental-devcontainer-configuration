@@ -46,6 +46,17 @@ As a developer, Neo4j does not replace Postgres; both run for domain SQL and Hay
 
 1. **Given** the full stack, **When** I list services, **Then** `db`, `db-sync`, `neo4j`, and `haystack-fast-api` are all present.
 
+### User Story 5 - Neo4j for VS Code extension (Priority: P2)
+
+As a Haystack developer, the devcontainer preinstalls the official **Neo4j for VS Code** extension so I can connect over Bolt and run Cypher without leaving the IDE (Neo4j Browser on 7474 remains available).
+
+**Independent Test**: `devcontainer.json` lists `neo4j-extensions.neo4j-for-vscode`; after rebuild, the extension is available; connect with documented credentials.
+
+**Acceptance Scenarios**:
+
+1. **Given** `Haystack-Fast-API/.devcontainer/devcontainer.json`, **When** I inspect `customizations.vscode.extensions`, **Then** `neo4j-extensions.neo4j-for-vscode` is present.
+2. **Given** Neo4j is healthy and I am in the app container network, **When** I connect the extension with URI `bolt://neo4j:7687` and dev credentials, **Then** a simple Cypher query can succeed.
+
 ## Edge Cases
 
 - Neo4j first-start password/auth: use `NEO4J_AUTH` so no interactive password change is required in Compose.
@@ -63,12 +74,15 @@ As a developer, Neo4j does not replace Postgres; both run for domain SQL and Hay
 - **FR-006**: Dev credentials MUST be documented as local-only.
 - **FR-007**: Docs MUST describe installing `neo4j-haystack` with `uv` for Haystack DocumentStore usage.
 - **FR-008**: Postgres services MUST remain available; Neo4j does not replace them.
+- **FR-009**: Devcontainer MUST list `neo4j-extensions.neo4j-for-vscode` under `customizations.vscode.extensions`.
+- **FR-010**: Docs MUST describe connecting Neo4j for VS Code (and Browser) with the documented Bolt URL and dev credentials.
 
 ### Key Entities
 
 - **Neo4j service**: Graph + vector store for Haystack documents.
 - **Connection config**: Env-based Bolt URL and auth.
 - **neo4j-haystack**: Python integration package (app dependency).
+- **Neo4j for VS Code**: IDE extension (`neo4j-extensions.neo4j-for-vscode`) for Cypher/Bolt.
 
 ## Success Criteria
 
@@ -77,6 +91,7 @@ As a developer, Neo4j does not replace Postgres; both run for domain SQL and Hay
 - **SC-003**: Neo4j Browser reachable on host (or via port forward).
 - **SC-004**: `NEO4J_*` env present in app container.
 - **SC-005**: Postgres stack undisturbed.
+- **SC-006**: `devcontainer.json` includes `neo4j-extensions.neo4j-for-vscode`.
 
 ## Assumptions
 

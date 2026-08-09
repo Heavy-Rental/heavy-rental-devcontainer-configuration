@@ -4,7 +4,7 @@
 
 ## Summary
 
-Add Neo4j 5 Community to Haystack Compose for `neo4j-haystack` DocumentStore integration; wire app env; document package install and verification.
+Add Neo4j 5 Community to Haystack Compose for `neo4j-haystack` DocumentStore integration; wire app env; document package install and verification. Preinstall **Neo4j for VS Code** (`neo4j-extensions.neo4j-for-vscode`) in the devcontainer.
 
 ## Technical Context
 
@@ -12,6 +12,7 @@ Add Neo4j 5 Community to Haystack Compose for `neo4j-haystack` DocumentStore int
 - Network: `heavy-rental-network`
 - Ports: 7474 (HTTP), 7687 (Bolt)
 - Python: `neo4j-haystack` via `uv` (postCreate or project deps)
+- IDE: `neo4j-extensions.neo4j-for-vscode` in `devcontainer.json` extensions
 - Complements existing Postgres (`db` / `db-sync`)
 
 ## Structure
@@ -19,7 +20,7 @@ Add Neo4j 5 Community to Haystack Compose for `neo4j-haystack` DocumentStore int
 ```text
 Haystack-Fast-API/.devcontainer/
   docker-compose.yml    # + neo4j service, app NEO4J_* env
-  devcontainer.json     # + ports 7474, 7687; uv install neo4j-haystack
+  devcontainer.json     # + ports 7474, 7687; uv install neo4j-haystack; Neo4j VS Code extension
   scripts/              # unchanged (postgres sync)
 
 specs/002-haystack-neo4j/

@@ -10,7 +10,8 @@ openspec/
     └── archive/
         ├── 2026-08-08-add-haystack-postgres-merge-sync/
         ├── 2026-08-08-add-haystack-neo4j/
-        └── 2026-08-09-add-haystack-faiss/
+        ├── 2026-08-09-add-haystack-faiss/
+        └── 2026-08-09-add-neo4j-vscode-extension/
 ```
 
 ## Source of truth
@@ -20,6 +21,7 @@ openspec/
 - Writable local Postgres (`db` / `postgres-haystack`) + 24h merge-sync from `postgres-primary`
 - Unique-key merge, additive schema evolution, opt-in parity flags / `SYNC_MODE`
 - **Neo4j 5** (`neo4j` / `neo4j-haystack`) for Haystack DocumentStore (`neo4j-haystack` package)
+- **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) preconfigured in the devcontainer
 - **FAISS** in-process DocumentStore (`faiss-haystack` package) with `FAISS_INDEX_PATH` under the workspace volume
 - App env: `DATABASE_URL` (Postgres) + `NEO4J_*` (Bolt) + `FAISS_*` (local index path)
 
@@ -30,6 +32,7 @@ openspec/
 | [2026-08-08-add-haystack-postgres-merge-sync](./changes/archive/2026-08-08-add-haystack-postgres-merge-sync/) | Local Postgres + merge sync |
 | [2026-08-08-add-haystack-neo4j](./changes/archive/2026-08-08-add-haystack-neo4j/) | Neo4j for Haystack |
 | [2026-08-09-add-haystack-faiss](./changes/archive/2026-08-09-add-haystack-faiss/) | FAISS DocumentStore for Haystack |
+| [2026-08-09-add-neo4j-vscode-extension](./changes/archive/2026-08-09-add-neo4j-vscode-extension/) | Neo4j for VS Code extension |
 
 **Spec Kit:**
 

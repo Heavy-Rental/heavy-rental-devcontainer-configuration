@@ -6,4 +6,5 @@
 - [x] T004 Update devcontainer.json ports + postCreate neo4j-haystack install
 - [x] T005 OpenSpec change + merge SoT + archive
 - [x] T006 Verification runbook
-- [ ] T007 Operator runtime verification (see verification.md)
+- [x] T008 Add Neo4j for VS Code extension + Spec Kit / OpenSpec docs
+- [ ] T007 Operator runtime verification (see verification.md; includes extension install after rebuild)

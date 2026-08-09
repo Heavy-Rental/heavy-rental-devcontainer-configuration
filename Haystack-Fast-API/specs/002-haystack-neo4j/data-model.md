@@ -29,6 +29,16 @@
 |---|---|
 | `NEO4J_AUTH` | `neo4j/heavyrental` |
 
+### IDE tooling
+
+| Attribute | Value |
+|---|---|
+| Extension ID | `neo4j-extensions.neo4j-for-vscode` |
+| Configured in | `.devcontainer/devcontainer.json` → `customizations.vscode.extensions` |
+| Bolt (in container) | `bolt://neo4j:7687` |
+| Bolt (from host) | `bolt://localhost:7687` |
+| Auth | same as `NEO4J_AUTH` / app `NEO4J_*` |
+
 ### Complementary store
 
 Postgres (`db` / `postgres-haystack`) remains the relational domain store; not replaced by Neo4j.

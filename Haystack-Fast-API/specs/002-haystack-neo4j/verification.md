@@ -50,6 +50,27 @@ Open `http://localhost:7474` (or forwarded port).
 - Connect URL: `bolt://localhost:7687` (from host) or use Browser defaults  
 - User: `neo4j` / Password: `heavyrental`
 
+## 4b. Neo4j for VS Code extension (SC-006, US5)
+
+**Config check:**
+
+```bash
+grep -n 'neo4j-extensions.neo4j-for-vscode' \
+  Haystack-Fast-API/.devcontainer/devcontainer.json
+```
+
+**Expect:** extension ID present under `customizations.vscode.extensions`.
+
+**Manual (after rebuild):** open Neo4j for VS Code → connect with:
+
+| Field | Inside container |
+|---|---|
+| URI | `bolt://neo4j:7687` |
+| User / Password | `neo4j` / `heavyrental` |
+| Database | `neo4j` |
+
+Run `RETURN 1` (or equivalent) and confirm success.
+
 ## 5. Install neo4j-haystack (US3)
 
 Inside the app container / devcontainer terminal:
@@ -94,7 +115,9 @@ Adjust constructor kwargs to the installed `neo4j-haystack` version.
 | SC-003 | Browser reachable | ☐ |
 | SC-004 | NEO4J_* in app | ☐ |
 | SC-005 | Postgres still present | ☐ |
+| SC-006 | neo4j-for-vscode in devcontainer.json | ☐ |
 | US3 | neo4j-haystack import | ☐ |
+| US5 | Extension connect (manual) | ☐ |
 
 ## Troubleshooting
 

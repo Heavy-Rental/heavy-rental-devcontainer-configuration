@@ -2,7 +2,7 @@
 
 **Status**: Implemented
 
-Neo4j 5 Community in the Haystack Fast API devcontainer for **neo4j-haystack** DocumentStore integration.
+Neo4j 5 Community in the Haystack Fast API devcontainer for **neo4j-haystack** DocumentStore integration, plus the **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`).
 
 | Artifact | Description |
 |---|---|

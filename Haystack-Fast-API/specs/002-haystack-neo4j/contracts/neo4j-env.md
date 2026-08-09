@@ -26,3 +26,15 @@
 
 - Install: `uv add neo4j-haystack` or `uv pip install neo4j-haystack`
 - Client SHOULD read URI/user/password from env above
+
+## IDE client (Neo4j for VS Code)
+
+| Field | Inside devcontainer | From host (port-forward) |
+|---|---|---|
+| Extension ID | `neo4j-extensions.neo4j-for-vscode` | same (if connected remotely) |
+| Bolt URI | `bolt://neo4j:7687` | `bolt://localhost:7687` |
+| User | `neo4j` | `neo4j` |
+| Password | `heavyrental` (dev only) | `heavyrental` (dev only) |
+| Database | `neo4j` | `neo4j` |
+
+Neo4j Browser remains available at `http://localhost:7474` and is not replaced by the extension.
