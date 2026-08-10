@@ -13,7 +13,7 @@ Add Neo4j 5 Community to Haystack Compose for `neo4j-haystack` DocumentStore int
 - Ports: 7474 (HTTP), 7687 (Bolt)
 - Python: `neo4j-haystack` via `uv` (postCreate or project deps)
 - IDE: `neo4j-extensions.neo4j-for-vscode` in `devcontainer.json` extensions; connections UI-managed (not `pgsql.connections`-style); optional settings `neo4j.features.linting` / `neo4j.trace.server`
-- Complements existing Postgres (`db` / `db-sync`)
+- Complements existing Postgres (`postgres-haystack` / `postgres-haystack-sync`)
 
 ## Structure
 

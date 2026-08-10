@@ -2,7 +2,7 @@
 
 **Status**: Implemented
 
-GitHub [Spec Kit](https://github.com/github/spec-kit)–style feature package for writable Haystack Postgres with 24h **merge** sync from REST API `postgres-primary`.
+GitHub [Spec Kit](https://github.com/github/spec-kit)–style feature package for writable Haystack Postgres with near-real-time **merge** sync (default 60s poll) from REST API `postgres-primary`.
 
 | Artifact | Description |
 |---|---|
@@ -19,7 +19,7 @@ GitHub [Spec Kit](https://github.com/github/spec-kit)–style feature package fo
 
 | Path | Role |
 |---|---|
-| `Haystack-Fast-API/.devcontainer/docker-compose.yml` | `db`, `db-sync`, app env |
+| `Haystack-Fast-API/.devcontainer/docker-compose.yml` | `postgres-haystack`, `postgres-haystack-sync`, app env |
 | `Haystack-Fast-API/.devcontainer/scripts/sync-from-primary.sh` | Merge loop |
 | `Haystack-Fast-API/.devcontainer/devcontainer.json` | Ports, pgsql profiles |
 

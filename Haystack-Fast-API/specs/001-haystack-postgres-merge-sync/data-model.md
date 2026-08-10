@@ -22,7 +22,7 @@ This feature does not introduce a new application domain model. It manages **dat
 
 | Attribute | Description |
 |---|---|
-| Identity | Compose service `db`, container name `postgres-haystack` |
+| Identity | Compose service `postgres-haystack`, container name `postgres-haystack` |
 | Engine | PostgreSQL 17 |
 | Database name | `heavy_rental` |
 | Volume | `postgres-haystack-data` (persistent across container recreate) |
@@ -35,19 +35,19 @@ This feature does not introduce a new application domain model. It manages **dat
 | Attribute | Description |
 |---|---|
 | Consumer | `haystack-fast-api` service |
-| Target | Local `db` service (in-compose DNS name `db`) |
-| Example URL | `postgresql://postgres:postgres@db:5432/heavy_rental` |
+| Target | Local `postgres-haystack` service (in-compose DNS name `postgres-haystack`) |
+| Example URL | `postgresql://postgres:postgres@postgres-haystack:5432/heavy_rental` |
 | Privileges | Full read/write on local database |
 
 ### 4. Sync Job
 
 | Attribute | Description |
 |---|---|
-| Identity | Compose service `db-sync`, container `postgres-haystack-sync` |
+| Identity | Compose service `postgres-haystack-sync`, container `postgres-haystack-sync` |
 | Image | `postgres:17` (client tools + script) |
 | Script | `.devcontainer/scripts/sync-from-primary.sh` |
-| Lifecycle | Long-running loop until halt exit or container stop (`restart: "no"`) |
-| Dependencies | Local `db` healthy; source optional (checked each cycle) |
+| Lifecycle | Long-running loop until halt exit or container stop (`restart: unless-stopped` by default) |
+| Dependencies | Local `postgres-haystack` healthy; source optional (checked each cycle) |
 | Side effects | FDW staging; upserts; optional ADD/DROP COLUMN; optional indexes; logs |
 
 ### 5. Sync Configuration (environment)
@@ -59,14 +59,14 @@ This feature does not introduce a new application domain model. It manages **dat
 | `SOURCE_USER` | `postgres` | Source user |
 | `SOURCE_PASSWORD` | `postgres` | Source password |
 | `SOURCE_DB` | `heavy_rental` | Source database |
-| `TARGET_HOST` | `db` | Local DB hostname from sync container |
+| `TARGET_HOST` | `postgres-haystack` | Local DB hostname from sync container |
 | `TARGET_PORT` | `5432` | Local DB port |
 | `TARGET_USER` | `postgres` | Local user |
 | `TARGET_PASSWORD` | `postgres` | Local password |
 | `TARGET_DB` | `heavy_rental` | Local database |
 | `STAGING_SCHEMA` | `primary_snapshot` | FDW import staging schema name |
-| `SYNC_INTERVAL_SECONDS` | `86400` | Sleep between cycles after each attempt |
-| `HALT_ON_PRIMARY_UNAVAILABLE` | `true` | Halt vs skip |
+| `SYNC_INTERVAL_SECONDS` | `60` | Sleep between cycles after each attempt (near-RT poll) |
+| `HALT_ON_PRIMARY_UNAVAILABLE` | `false` | Halt vs skip (default skip) |
 | `PRIMARY_CHECK_RETRIES` | `5` | Connectivity retries |
 | `PRIMARY_CHECK_DELAY_SECONDS` | `3` | Delay between retries |
 | `SCHEMA_EVOLUTION` | `true` | CREATE missing tables + ADD COLUMN |

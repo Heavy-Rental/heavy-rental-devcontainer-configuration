@@ -1,8 +1,8 @@
 # Spec Kit: Haystack FAISS DocumentStore
 
-**Status**: Implemented
+**Status: removed from default devcontainer** — FAISS env (`FAISS_*`) and postCreate `faiss-haystack` install are **no longer** wired in `docker-compose.yml` / `devcontainer.json`. This Spec Kit package is retained for history only. OpenSpec SoT no longer requires FAISS.
 
-In-process **FAISSDocumentStore** support in the Haystack Fast API devcontainer via `faiss-haystack` (CPU). Complements Neo4j and Postgres; no separate FAISS Docker service.
+**Previous status**: Implemented (in-process **FAISSDocumentStore** via `faiss-haystack` (CPU); no separate FAISS Docker service).
 
 | Artifact | Description |
 |---|---|
@@ -15,5 +15,5 @@ In-process **FAISSDocumentStore** support in the Haystack Fast API devcontainer 
 | [quickstart.md](./quickstart.md) | Short entry |
 | [tasks.md](./tasks.md) | Task list |
 
-**Implementation:** `Haystack-Fast-API/.devcontainer/docker-compose.yml`, `devcontainer.json`  
-**OpenSpec:** `openspec/specs/haystack-devcontainer/spec.md` (SoT) + archive `add-haystack-faiss`
+**Former implementation (removed):** compose `FAISS_*` env + postCreate `faiss-haystack`  
+**OpenSpec:** archive `add-haystack-faiss` (historical); current SoT does not require FAISS

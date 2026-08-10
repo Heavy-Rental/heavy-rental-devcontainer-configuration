@@ -6,32 +6,34 @@ Behavior of the **Haystack Fast API** development container stack as configured 
 
 The stack includes a **writable local PostgreSQL** database and a **merge-sync** job that periodically upserts data from the REST API primary (`postgres-primary` / `heavy_rental`).
 
-**Default policy (sandbox merge):** additive schema evolution, PK or unique merge keys, retain local-only rows/columns, halt if primary unreachable, 24h schedule. **Opt-in parity** flags and `SYNC_MODE=mirror` can enable drops, secondary indexes, and safe type widenings (see requirements below). Only the **`public`** schema is merged today.
+**Default policy (sandbox merge):** additive schema evolution, PK or unique merge keys, retain local-only rows/columns, **skip** merge cycles if primary unreachable (retry after interval), **near-real-time poll** default **60s** (`SYNC_INTERVAL_SECONDS`; not CDC). **Opt-in parity** flags and `SYNC_MODE=mirror` can enable drops, secondary indexes, and safe type widenings (see requirements below). Only the **`public`** schema is merged today. Set `HALT_ON_PRIMARY_UNAVAILABLE=true` to stop the job process when primary is down.
 
 **Neo4j:** local Community 5 instance for Haystack DocumentStore (`neo4j-haystack`), complementary to Postgres. Devcontainer installs the **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) for Cypher/Bolt in the IDE (Browser remains on port 7474). IDE connections are UI-managed (not a `pgsql.connections`-style settings array).
 
-**FAISS:** in-process FAISSDocumentStore (`faiss-haystack`) with workspace index path env; no separate FAISS Compose service. Complements Neo4j and Postgres.
+**FAISS:** not part of the default stack (env and postCreate install removed). Spec Kit `003` retained as historical only.
 
 Change history:
 - `openspec/changes/archive/2026-08-08-add-haystack-postgres-merge-sync/`
 - `openspec/changes/archive/2026-08-08-add-haystack-neo4j/`
-- `openspec/changes/archive/2026-08-09-add-haystack-faiss/`
+- `openspec/changes/archive/2026-08-09-add-haystack-faiss/` (later removed from default stack)
 - `openspec/changes/archive/2026-08-09-add-neo4j-vscode-extension/`
 - `openspec/changes/archive/2026-08-09-document-neo4j-vscode-ui-connections/`
+- 2026-08-10: Feasibility_Study §11 **T1** — near-RT default `SYNC_INTERVAL_SECONDS=60`, skip-by-default when primary down, `restart: unless-stopped`; service names `postgres-haystack` / `postgres-haystack-sync`
+- 2026-08-10: **FAISS removed** from compose env and `postCreateCommand` (no longer SoT)
 
-Spec Kit: `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`, `specs/003-haystack-faiss/`.
+Spec Kit (active): `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`. Historical: `specs/003-haystack-faiss/`.
 
 ## Requirements
 
 ### Requirement: Devcontainer Compose stack
 
-The Haystack Fast API development environment MUST start via Docker Compose using `Haystack-Fast-API/.devcontainer/docker-compose.yml`, attach to the external network `heavy-rental-network`, and include the application service, local Postgres (`db` / `db-sync`), and Neo4j services.
+The Haystack Fast API development environment MUST start via Docker Compose using `Haystack-Fast-API/.devcontainer/docker-compose.yml`, attach to the external network `heavy-rental-network`, and include the application service, local Postgres (`postgres-haystack` / `postgres-haystack-sync`), and Neo4j services.
 
 #### Scenario: Stack services
 
 - **GIVEN** this configuration is deployed
 - **WHEN** a developer inspects Compose services
-- **THEN** `haystack-fast-api`, `db`, `db-sync`, and `neo4j` are defined
+- **THEN** `haystack-fast-api`, `postgres-haystack`, `postgres-haystack-sync`, and `neo4j` are defined
 - **AND** all join `heavy-rental-network`
 
 #### Scenario: App service joins shared network
@@ -86,25 +88,9 @@ The devcontainer MAY set only the extension’s supported settings keys (e.g. `n
 - **WHEN** a developer looks for a `pgsql.connections`-style settings array for Neo4j
 - **THEN** no such supported key exists; they MUST use **Neo4j: Create new connection** (or the Connections pane) with the documented Haystack values
 
-### Requirement: FAISS local vector store for Haystack
-
-The Haystack application service MUST support in-process FAISSDocumentStore usage: install or document `faiss-haystack` (CPU), and expose `FAISS_INDEX_PATH` pointing at a writable path under the workspace volume. Optional `FAISS_EMBEDDING_DIM` and `FAISS_INDEX_STRING` MAY be provided as convenience defaults. A separate FAISS Compose service is NOT required. FAISS MUST NOT replace Postgres or Neo4j.
-
-#### Scenario: FAISS env present
-
-- **GIVEN** the app container is running
-- **WHEN** environment variables are read
-- **THEN** `FAISS_INDEX_PATH` is set to a path under `/workspaces/haystack-fast-api`
-
-#### Scenario: Package install path for faiss-haystack
-
-- **GIVEN** postCreate or documented install steps
-- **WHEN** a developer imports FAISSDocumentStore
-- **THEN** `from haystack_integrations.document_stores.faiss import FAISSDocumentStore` succeeds after following Spec Kit `003` install steps
-
 ### Requirement: Local writable database
 
-The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fully writable and persists data in a dedicated Docker volume. The Haystack application service MUST use this local database as its default **relational** read/write data source (Haystack document/vector storage MAY use Neo4j and/or in-process FAISS).
+The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fully writable and persists data in a dedicated Docker volume. The Haystack application service MUST use this local database as its default **relational** read/write data source (Haystack document/vector storage MAY use Neo4j).
 
 #### Scenario: Local database accepts writes
 
@@ -226,11 +212,11 @@ Before modifying local application data, the sync process MUST detect whether `p
 
 ### Requirement: Halt on primary unavailability
 
-When the source is unavailable and halt mode is enabled (default), the sync process MUST leave local application data unchanged and MUST stop further scheduled merges for that process lifetime.
+When the source is unavailable and halt mode is enabled (`HALT_ON_PRIMARY_UNAVAILABLE=true`), the sync process MUST leave local application data unchanged and MUST stop further scheduled merges for that process lifetime. Halt is **opt-in**; the Compose default is skip mode (see skip requirement).
 
-#### Scenario: Default halt
+#### Scenario: Explicit halt
 
-- **GIVEN** `HALT_ON_PRIMARY_UNAVAILABLE` is true (default) and primary cannot be detected
+- **GIVEN** `HALT_ON_PRIMARY_UNAVAILABLE` is true and primary cannot be detected
 - **WHEN** the sync process evaluates connectivity
 - **THEN** it logs a halt condition
 - **AND** it does not modify local application tables
@@ -242,21 +228,21 @@ When the source is unavailable and halt mode is enabled (default), the sync proc
 - **WHEN** the developer uses the Haystack app or `psql` against the local database
 - **THEN** read and write operations still succeed
 
-### Requirement: Skip cycle when halt disabled
+### Requirement: Skip cycle when primary unavailable (default)
 
-When the source is unavailable and halt mode is disabled, the sync process MUST skip the merge, leave local data intact, wait for the configured interval, and retry.
+When the source is unavailable and halt mode is disabled (default), the sync process MUST skip the merge, leave local data intact, wait for the configured interval, and retry. The Compose service SHOULD use `restart: unless-stopped` so the long-running loop survives container engine restarts without pairing halt+restart storms.
 
-#### Scenario: Skip and wait
+#### Scenario: Default skip and wait
 
-- **GIVEN** `HALT_ON_PRIMARY_UNAVAILABLE` is false and primary cannot be detected
+- **GIVEN** `HALT_ON_PRIMARY_UNAVAILABLE` is false (default) and primary cannot be detected
 - **WHEN** the sync process evaluates connectivity
 - **THEN** it logs a skip
 - **AND** it sleeps for `SYNC_INTERVAL_SECONDS`
 - **AND** it attempts another cycle afterward
 
-### Requirement: Scheduled refresh every 24 hours
+### Requirement: Near-real-time scheduled refresh
 
-The sync process MUST attempt a merge cycle when it starts (after local DB readiness) and MUST wait 24 hours by default between subsequent attempts. The interval MUST be overridable via environment configuration.
+The sync process MUST attempt a merge cycle when it starts (after local DB readiness) and MUST wait **60 seconds** by default between subsequent attempts (near-real-time **poll**, not CDC/logical replication). The interval MUST be overridable via `SYNC_INTERVAL_SECONDS` (e.g. `300` or `86400` for lighter load).
 
 #### Scenario: Initial attempt at start
 
@@ -268,7 +254,7 @@ The sync process MUST attempt a merge cycle when it starts (after local DB readi
 
 - **GIVEN** default configuration
 - **WHEN** a cycle attempt finishes
-- **THEN** the next attempt is scheduled after 86400 seconds
+- **THEN** the next attempt is scheduled after 60 seconds
 
 #### Scenario: Custom interval
 

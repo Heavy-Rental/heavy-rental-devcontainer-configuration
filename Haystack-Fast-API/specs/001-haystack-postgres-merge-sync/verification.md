@@ -15,7 +15,7 @@ This runbook is the **source of truth** for runtime verification. OpenSpec task 
 | Docker + Compose v2 | Required |
 | External network | `heavy-rental-network` |
 | REST API stack | Container **`postgres-primary`** healthy (for merge tests SC-002–SC-004) |
-| Haystack stack | Services `db`, `db-sync`, `haystack-fast-api` |
+| Haystack stack | Services `postgres-haystack`, `postgres-haystack-sync`, `haystack-fast-api` |
 
 ### Create the shared network (once)
 
@@ -66,18 +66,18 @@ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' \
 
 | Expected name | Role |
 |---|---|
-| `postgres-haystack` | Local writable Postgres (`db`) |
-| `postgres-haystack-sync` | Merge scheduler (`db-sync`) |
+| `postgres-haystack` | Local writable Postgres |
+| `postgres-haystack-sync` | Merge scheduler |
 | `haystack-fast-api` | App container |
 | `postgres-primary` | REST API primary (source) |
 
 ### Force a new sync cycle (helper)
 
-Default interval is 24 hours. To re-run merge without waiting:
+Default interval is 60 seconds (near-RT poll). To force a new cycle immediately:
 
 ```bash
 cd Haystack-Fast-API/.devcontainer
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 docker logs -f postgres-haystack-sync
 ```
 
@@ -127,7 +127,7 @@ SELECT * FROM sync_smoke ORDER BY id;
 docker exec haystack-fast-api printenv DATABASE_URL
 ```
 
-**Expect:** `postgresql://postgres:postgres@db:5432/heavy_rental`
+**Expect:** `postgresql://postgres:postgres@postgres-haystack:5432/heavy_rental`
 
 | SC | Result |
 |---|---|
@@ -161,7 +161,7 @@ If the job already **halted** earlier, recreate it (section 1 helper).
 - Log lines about source reachable / merge starting  
 - `MERGE public.<table>` and/or `Merge cycle summary`  
 - `=== Sync cycle end (success) ===`  
-- Then `Sleeping 86400s until next cycle` (unless interval was overridden)
+- Then `Sleeping 60s until next cycle` (unless interval was overridden)
 
 **Do not expect** (for this check): `HALT: cannot detect connection`
 
@@ -204,7 +204,7 @@ SELECT * FROM sync_smoke WHERE id = 999;
 
 ```bash
 cd Haystack-Fast-API/.devcontainer
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 docker logs postgres-haystack-sync 2>&1 | tail -n 50
 ```
 
@@ -260,7 +260,7 @@ docker exec postgres-haystack \
 
 ```bash
 cd Haystack-Fast-API/.devcontainer
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 # wait for success in logs, then:
 docker exec postgres-haystack \
   psql -U postgres -d heavy_rental -c \
@@ -277,16 +277,17 @@ docker exec postgres-haystack \
 
 ---
 
-## 6. SC-005 — Halt when primary is unavailable
+## 6. SC-005 — Primary unavailable (default skip; optional halt)
 
-**Goal:** With default `HALT_ON_PRIMARY_UNAVAILABLE=true`, missing primary stops the sync job without wiping local data; local DB stays usable.
+**Goal:** Missing primary does not wipe local data; local DB stays usable. **Default** is skip+retry; halt remains opt-in.
 
-### 6.1 Confirm default halt mode
+### 6.1 Confirm default skip mode
 
-In `docker-compose.yml`, `db-sync` should have:
+In `docker-compose.yml`, `postgres-haystack-sync` should have:
 
 ```yaml
-HALT_ON_PRIMARY_UNAVAILABLE: "true"
+HALT_ON_PRIMARY_UNAVAILABLE: "false"
+restart: unless-stopped
 ```
 
 ### 6.2 Stop primary (or entire REST API stack)
@@ -300,17 +301,34 @@ docker stop postgres-primary
 
 ```bash
 cd Haystack-Fast-API/.devcontainer
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 docker logs postgres-haystack-sync 2>&1 | tail -n 40
 ```
 
-**Expect:**
+**Expect (default skip):**
 
-- Message containing `HALT: cannot detect connection`  
-- Job exits (container may show `Exited` because `restart: "no"`)  
+- Message containing `SKIP: primary unavailable` (or equivalent)  
+- Job keeps running; sleeps `SYNC_INTERVAL_SECONDS` and retries  
 - No successful merge of application tables in that cycle  
 
-### 6.4 Local DB still works; prior data intact
+### 6.4 Optional — Explicit halt path
+
+Temporarily set:
+
+```yaml
+HALT_ON_PRIMARY_UNAVAILABLE: "true"
+```
+
+and prefer `restart: "no"` for this test, then recreate:
+
+**Expect:**
+
+- `HALT: cannot detect connection`  
+- Process exits (container may show `Exited` if restart is `"no"`)  
+
+Restore defaults afterward.
+
+### 6.5 Local DB still works; prior data intact
 
 ```bash
 docker exec postgres-haystack \
@@ -322,7 +340,7 @@ SELECT * FROM sync_smoke WHERE id = 999;
 
 **Expect:** Queries succeed; local-only row still present if you ran SC-003.
 
-### 6.5 Restore primary for later tests
+### 6.6 Restore primary for later tests
 
 ```bash
 docker start postgres-primary
@@ -335,12 +353,12 @@ docker start postgres-primary
 
 ---
 
-## 7. SC-006 — Default 24-hour schedule
+## 7. SC-006 — Default 60-second schedule
 
-**Goal:** After a cycle, the job schedules the next attempt at 86400 seconds (default).
+**Goal:** After a cycle, the job schedules the next attempt at 60 seconds (default near-RT poll).
 
 1. Ensure primary is up.  
-2. Recreate `db-sync` with **default** env (`SYNC_INTERVAL_SECONDS=86400`).  
+2. Recreate `postgres-haystack-sync` with **default** env (`SYNC_INTERVAL_SECONDS=60`).  
 3. Inspect logs:
 
 ```bash
@@ -349,10 +367,8 @@ docker logs postgres-haystack-sync 2>&1 | grep -E 'Sleeping|interval='
 
 **Expect:**
 
-- Config log shows `interval=86400s` (or equivalent)  
-- After first cycle: `Sleeping 86400s until next cycle`  
-
-You do **not** need to wait 24 hours.
+- Config log shows `interval=60s` (or equivalent)  
+- After first cycle: `Sleeping 60s until next cycle`  
 
 | SC | Result |
 |---|---|
@@ -360,23 +376,23 @@ You do **not** need to wait 24 hours.
 
 ---
 
-## 8. SC-007 — Short interval second cycle (recommended)
+## 8. SC-007 — Second cycle under default (or shorter) interval
 
-**Goal:** With a short interval, a second cycle runs ~60–90 seconds after the first.
+**Goal:** A second cycle runs ~60–90 seconds after the first with default near-RT settings.
 
-### 8.1 Temporary override
+### 8.1 Use default (or temporary shorter override)
 
-Edit `Haystack-Fast-API/.devcontainer/docker-compose.yml` under `db-sync.environment`:
+Default is already `"60"`. Optionally set lower for faster tests:
 
 ```yaml
-SYNC_INTERVAL_SECONDS: "60"
+SYNC_INTERVAL_SECONDS: "30"
 ```
 
 Or one-off without permanent edit:
 
 ```bash
 cd Haystack-Fast-API/.devcontainer
-SYNC_INTERVAL_SECONDS=60 docker compose run --rm --entrypoint /bin/bash db-sync \
+SYNC_INTERVAL_SECONDS=60 docker compose run --rm --entrypoint /bin/bash postgres-haystack-sync \
   -c 'export SYNC_INTERVAL_SECONDS=60; /usr/local/bin/sync-from-primary.sh'
 ```
 
@@ -385,7 +401,7 @@ Prefer Compose env edit + recreate for a realistic service test:
 ```bash
 cd Haystack-Fast-API/.devcontainer
 # after setting SYNC_INTERVAL_SECONDS: "60" in compose:
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 docker logs -f postgres-haystack-sync
 ```
 
@@ -397,7 +413,7 @@ docker logs -f postgres-haystack-sync
 
 ### 8.2 Restore default
 
-Set `SYNC_INTERVAL_SECONDS` back to `"86400"` and recreate `db-sync`.
+If you overrode the interval, set `SYNC_INTERVAL_SECONDS` back to `"60"` and recreate `postgres-haystack-sync`.
 
 | SC | Result |
 |---|---|
@@ -405,24 +421,24 @@ Set `SYNC_INTERVAL_SECONDS` back to `"86400"` and recreate `db-sync`.
 
 ---
 
-## 9. Optional — Skip mode (not a required SC)
+## 9. Optional — Explicit halt mode (not a required SC)
 
-With primary **stopped**:
+With primary **stopped**, temporarily set:
 
 ```yaml
-# db-sync environment
-HALT_ON_PRIMARY_UNAVAILABLE: "false"
-SYNC_INTERVAL_SECONDS: "60"
+# postgres-haystack-sync environment
+HALT_ON_PRIMARY_UNAVAILABLE: "true"
+# prefer restart: "no" for this test to avoid restart storms
 ```
 
 ```bash
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 docker logs -f postgres-haystack-sync
 ```
 
-**Expect:** `SKIP: primary unavailable...`, sleep, retry — job keeps running; local data unchanged.
+**Expect:** `HALT: cannot detect connection...` and process exit.
 
-Restore `HALT_ON_PRIMARY_UNAVAILABLE: "true"` and `SYNC_INTERVAL_SECONDS: "86400"` when finished.
+Restore defaults: `HALT_ON_PRIMARY_UNAVAILABLE: "false"`, `SYNC_INTERVAL_SECONDS: "60"`, `restart: unless-stopped`.
 
 ---
 
@@ -458,7 +474,7 @@ Force sync:
 
 ```bash
 cd Haystack-Fast-API/.devcontainer
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 docker logs postgres-haystack-sync 2>&1 | grep -E 'uk_demo|unique'
 ```
 
@@ -470,7 +486,7 @@ Local-only retention:
 docker exec postgres-haystack \
   psql -U postgres -d heavy_rental -c \
   "INSERT INTO uk_demo (code, label) VALUES ('local-only', 'keep') ON CONFLICT DO NOTHING;"
-# recreate db-sync again, then:
+# recreate postgres-haystack-sync again, then:
 docker exec postgres-haystack \
   psql -U postgres -d heavy_rental -c "SELECT * FROM uk_demo WHERE code = 'local-only';"
 ```
@@ -501,7 +517,7 @@ Force sync and check local:
 
 ```bash
 cd Haystack-Fast-API/.devcontainer
-docker compose up -d --force-recreate db-sync
+docker compose up -d --force-recreate postgres-haystack-sync
 docker logs postgres-haystack-sync 2>&1 | grep -E 'SCHEMA ADD COLUMN|uk_demo'
 docker exec postgres-haystack \
   psql -U postgres -d heavy_rental -c \
@@ -529,14 +545,14 @@ docker logs postgres-haystack-sync 2>&1 | head -n 20
 ### Drop orphan columns (opt-in)
 
 1. Ensure local has an extra column not on primary (e.g. leave a local-only col).  
-2. Set `DROP_ORPHAN_COLUMNS: "true"` on `db-sync`, recreate.  
+2. Set `DROP_ORPHAN_COLUMNS: "true"` on `postgres-haystack-sync`, recreate.  
 3. **Expect:** log `SCHEMA DROP COLUMN ...`; column gone.  
 4. Restore flag to `"false"`.
 
 ### Secondary indexes (opt-in)
 
 1. On primary create a non-unique index on a merged table.  
-2. Set `SYNC_INDEXES: "true"`, recreate `db-sync`.  
+2. Set `SYNC_INDEXES: "true"`, recreate `postgres-haystack-sync`.  
 3. **Expect:** log `INDEX CREATE ...`; index exists on local.  
 4. Restore flag to `"false"`.
 
@@ -564,9 +580,9 @@ SYNC_MODE: mirror
 | SC-002 | Merge from primary when reachable | ☐ Pass / ☐ Fail |
 | SC-003 | Local-only row retained after merge | ☐ Pass / ☐ Fail |
 | SC-004 | Shared key: primary wins | ☐ Pass / ☐ Fail / ☐ Blocked |
-| SC-005 | Halt when primary down; local still R/W | ☐ Pass / ☐ Fail |
-| SC-006 | Default sleep 86400 logged | ☐ Pass / ☐ Fail |
-| SC-007 | Second cycle with interval 60 | ☐ Pass / ☐ Fail / ☐ Skipped |
+| SC-005 | Primary down: skip (default) or halt (opt-in); local still R/W | ☐ Pass / ☐ Fail |
+| SC-006 | Default sleep 60 logged | ☐ Pass / ☐ Fail |
+| SC-007 | Second cycle ~60s | ☐ Pass / ☐ Fail / ☐ Skipped |
 | UK | Unique-key merge (no PK) | ☐ Pass / ☐ Fail / ☐ Skipped |
 | EV | Additive schema evolution | ☐ Pass / ☐ Fail / ☐ Skipped |
 | OPT | Defaults keep drop/index/type off | ☐ Pass / ☐ Fail |
@@ -581,11 +597,11 @@ SYNC_MODE: mirror
 | Symptom | What to check |
 |---|---|
 | Cannot resolve `postgres-primary` | REST API stack up? Both on `heavy-rental-network`? |
-| `db-sync` already exited | Halted after failed check — `docker compose up -d --force-recreate db-sync` |
+| `postgres-haystack-sync` already exited | Halt mode enabled or crash — check logs; with defaults expect skip not exit. Recreate: `docker compose up -d --force-recreate postgres-haystack-sync` |
 | Auth failures | `postgres` / `postgres` on both stacks |
 | Tables skipped | Source needs a **primary key** or **unique** key (if `ALLOW_UNIQUE_MERGE_KEY=true`) |
-| New column missing locally | `SCHEMA_EVOLUTION=true`? Recreate `db-sync` after primary ALTER |
-| App still on wrong host | `DATABASE_URL` → `db`, not `postgres-primary` |
+| New column missing locally | `SCHEMA_EVOLUTION=true`? Recreate `postgres-haystack-sync` after primary ALTER |
+| App still on wrong host | `DATABASE_URL` → `postgres-haystack`, not `postgres-primary` |
 | Empty merge | Primary `public` has no tables yet — SC-002 path still valid if logs show success |
 | Port 5434 in use | Change host mapping in Compose or free the port |
 
@@ -605,7 +621,7 @@ SYNC_MODE: mirror
 | Artifact | Path |
 |---|---|
 | Feature spec (SC-*) | [spec.md](./spec.md) |
-| Env contract | [contracts/db-sync-env.md](./contracts/db-sync-env.md) |
+| Env contract | [contracts/postgres-haystack-sync-env.md](./contracts/postgres-haystack-sync-env.md) |
 | Implementation plan | [plan.md](./plan.md) |
 | Short entry point | [quickstart.md](./quickstart.md) |
 | OpenSpec SoT | `openspec/specs/haystack-devcontainer/spec.md` |

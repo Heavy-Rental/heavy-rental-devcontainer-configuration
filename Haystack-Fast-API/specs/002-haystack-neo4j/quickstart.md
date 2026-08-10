@@ -11,7 +11,7 @@ docker compose up -d
 | Service | Container | Ports |
 |---|---|---|
 | `neo4j` | `neo4j-haystack` | 7474 HTTP, 7687 Bolt |
-| `db` | `postgres-haystack` | 5434 (unchanged) |
+| `postgres-haystack` | `postgres-haystack` | 5434 (unchanged) |
 
 ```bash
 docker exec haystack-fast-api printenv | grep NEO4J

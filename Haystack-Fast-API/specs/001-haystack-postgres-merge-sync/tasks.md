@@ -33,8 +33,8 @@
 **⚠️ CRITICAL**: US2–US5 depend on this phase
 
 - [x] T004 Add volume `postgres-haystack-data` to `Haystack-Fast-API/.devcontainer/docker-compose.yml`
-- [x] T005 Add service `db` (`postgres:17`, container `postgres-haystack`, env for `heavy_rental`, healthcheck, network `heavy-rental-network`, ports `5434:5432`)
-- [x] T006 Wire `haystack-fast-api` `depends_on: db` (service_healthy) and `DATABASE_URL` (or equivalent) to `postgresql://postgres:postgres@db:5432/heavy_rental`
+- [x] T005 Add service `postgres-haystack` (`postgres:17`, container `postgres-haystack`, env for `heavy_rental`, healthcheck, network `heavy-rental-network`, ports `5434:5432`)
+- [x] T006 Wire `haystack-fast-api` `depends_on: postgres-haystack` (service_healthy) and `DATABASE_URL` (or equivalent) to `postgresql://postgres:postgres@postgres-haystack:5432/heavy_rental`
 - [ ] T007 Verify local R/W with `psql` against `postgres-haystack` (US1 smoke) — *run after rebuild*
 
 **Checkpoint**: Local DB works without REST API stack
@@ -49,7 +49,7 @@
 
 ### Implementation for User Story 1
 
-- [x] T008 [US1] Confirm app container resolves hostname `db` on `heavy-rental-network` (Compose wired)
+- [x] T008 [US1] Confirm app container resolves hostname `postgres-haystack` on `heavy-rental-network` (Compose wired)
 - [x] T009 [US1] Optional: add `forwardPorts` / pgsql connection profile for local DB in `devcontainer.json`
 - [x] T010 [US1] Document local connection string in comments or quickstart cross-link
 
@@ -74,7 +74,7 @@
 - [x] T017 [US2] Skip tables without PK/unique merge key; log warnings
 - [x] T018 [US2] Ensure merge does not delete local-only keys
 - [x] T019 [US2][US3] Structured logging for merge success, skip, halt, failures
-- [x] T020 [US2] Add Compose service `db-sync` mounting script, env defaults, `depends_on` healthy `db`, `restart: "no"`, network
+- [x] T020 [US2] Add Compose service `postgres-haystack-sync` mounting script, env defaults, `depends_on` healthy `postgres-haystack`, `restart: unless-stopped`, network
 
 **Checkpoint**: One successful merge with primary up; halt with primary down; local-only row retained
 
@@ -90,7 +90,7 @@
 
 - [x] T021 [US4] Wrap merge attempt in infinite loop with `sleep "${SYNC_INTERVAL_SECONDS}"` after each attempt (including skip)
 - [x] T022 [US4] Ensure first attempt runs before first sleep
-- [x] T023 [US4] Default `SYNC_INTERVAL_SECONDS=86400` in Compose env
+- [x] T023 [US4] Default `SYNC_INTERVAL_SECONDS=60` in Compose env (near-RT; was 86400)
 
 **Checkpoint**: Two cycles observed with test interval (e.g. 60s)
 
@@ -147,16 +147,16 @@
 
 Complete through **Phase 4** (local DB + one-shot merge loop with halt) for a viable demo; add US4 interval defaults if the loop is already present (T021–T023 should ship with Phase 4 if the script is already loop-based).
 
-**Note**: Implementation may deliver T021 as part of Phase 4 since the designed process is inherently a loop; still verify SC-006 (24h default) explicitly.
+**Note**: Implementation may deliver T021 as part of Phase 4 since the designed process is inherently a loop; still verify SC-006 (60s default) explicitly.
 
 ---
 
 ## Implementation Strategy
 
-1. Foundational `db` first so Haystack always has R/W storage  
+1. Foundational `postgres-haystack` first so Haystack always has R/W storage  
 2. Sync script next with halt-safe connectivity  
-3. Confirm merge semantics (local-only retention) before relying on 24h cadence  
-4. Lock defaults (86400, halt true) and document  
+3. Confirm merge semantics (local-only retention) before relying on near-RT cadence  
+4. Lock defaults (60s, halt false / skip) and document (Feasibility_Study §11 T1)  
 
 ---
 

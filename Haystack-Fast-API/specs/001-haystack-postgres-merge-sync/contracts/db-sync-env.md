@@ -1,7 +1,7 @@
-# Contract: `db-sync` operational interface
+# Contract: `postgres-haystack-sync` operational interface
 
 **Feature**: `001-haystack-postgres-merge-sync`  
-**Consumer**: Compose service `db-sync` (and operators reading logs)  
+**Consumer**: Compose service `postgres-haystack-sync` (and operators reading logs)  
 **Provider**: `sync-from-primary.sh` (or equivalent)
 
 ## Purpose
@@ -19,14 +19,14 @@ All values are strings in Compose; parsers MUST coerce integers/bools as documen
 | `SOURCE_USER` | no | `postgres` | non-empty |
 | `SOURCE_PASSWORD` | no | `postgres` | may be empty only if auth allows |
 | `SOURCE_DB` | no | `heavy_rental` | non-empty |
-| `TARGET_HOST` | no | `db` | non-empty |
+| `TARGET_HOST` | no | `postgres-haystack` | non-empty |
 | `TARGET_PORT` | no | `5432` | positive integer |
 | `TARGET_USER` | no | `postgres` | non-empty |
 | `TARGET_PASSWORD` | no | `postgres` | — |
 | `TARGET_DB` | no | `heavy_rental` | non-empty |
 | `STAGING_SCHEMA` | no | `primary_snapshot` | valid Postgres identifier |
-| `SYNC_INTERVAL_SECONDS` | no | `86400` | integer ≥ 1 |
-| `HALT_ON_PRIMARY_UNAVAILABLE` | no | `true` | `true` / `false` (case-insensitive) |
+| `SYNC_INTERVAL_SECONDS` | no | `60` | integer ≥ 1 (near-RT poll; not CDC) |
+| `HALT_ON_PRIMARY_UNAVAILABLE` | no | `false` | `true` / `false` (case-insensitive); default skip+retry |
 | `PRIMARY_CHECK_RETRIES` | no | `5` | integer ≥ 1 |
 | `PRIMARY_CHECK_DELAY_SECONDS` | no | `3` | integer ≥ 0 |
 | `SCHEMA_EVOLUTION` | no | `true` | `true` / `false` — ADD COLUMN for missing source columns |
@@ -115,7 +115,7 @@ on_start:
 ```
 
 - First attempt happens **before** the first full interval sleep.
-- Default interval is **86400** seconds (24 hours).
+- Default interval is **60** seconds (near-real-time poll; not CDC). Override via env for lighter load.
 
 ## Logging contract (minimum)
 
@@ -131,8 +131,8 @@ Each cycle MUST emit human-readable logs including:
 
 | Endpoint | Direction | Port |
 |---|---|---|
-| `db-sync` → `TARGET_HOST` | TCP | `TARGET_PORT` |
-| `db-sync` or `db` → `SOURCE_HOST` | TCP | `SOURCE_PORT` |
+| `postgres-haystack-sync` → `TARGET_HOST` | TCP | `TARGET_PORT` |
+| `postgres-haystack-sync` or `postgres-haystack` → `SOURCE_HOST` | TCP | `SOURCE_PORT` |
 
 Both endpoints MUST be on Docker network `heavy-rental-network` (or equivalent shared network providing those DNS names).
 

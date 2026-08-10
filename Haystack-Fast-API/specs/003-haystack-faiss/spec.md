@@ -48,7 +48,7 @@ As a developer, FAISS does not replace Postgres or Neo4j; all remain available f
 
 **Acceptance Scenarios**:
 
-1. **Given** the full stack, **When** I list Compose services, **Then** `db`, `db-sync`, `neo4j`, and `haystack-fast-api` are still present (no FAISS Compose service required).
+1. **Given** the full stack, **When** I list Compose services, **Then** `postgres-haystack`, `postgres-haystack-sync`, `neo4j`, and `haystack-fast-api` are still present (no FAISS Compose service required).
 
 ## Edge Cases
 

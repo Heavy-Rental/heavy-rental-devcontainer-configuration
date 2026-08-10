@@ -44,7 +44,7 @@ As a developer, Neo4j does not replace Postgres; both run for domain SQL and Hay
 
 **Acceptance Scenarios**:
 
-1. **Given** the full stack, **When** I list services, **Then** `db`, `db-sync`, `neo4j`, and `haystack-fast-api` are all present.
+1. **Given** the full stack, **When** I list services, **Then** `postgres-haystack`, `postgres-haystack-sync`, `neo4j`, and `haystack-fast-api` are all present.
 
 ### User Story 5 - Neo4j for VS Code extension (Priority: P2)
 
