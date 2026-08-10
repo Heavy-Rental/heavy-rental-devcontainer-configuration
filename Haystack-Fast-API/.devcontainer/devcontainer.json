@@ -10,11 +10,10 @@
 	// "features": {},
 
 	// 5434 Postgres host map; 7474 Neo4j Browser; 7687 Neo4j Bolt
-	// FAISS is in-process (no host port) — see specs/003-haystack-faiss/
 	"forwardPorts": [5434, 7474, 7687],
 
-	// postCreate: workspace ownership, uv, DocumentStore packages (neo4j-haystack + faiss-haystack)
-	"postCreateCommand": "sudo chown -R vscode:vscode /workspaces/haystack-fast-api && curl -LsSf https://astral.sh/uv/install.sh | sh && export PATH=\"$HOME/.local/bin:$PATH\" && (uv pip install neo4j-haystack faiss-haystack || pip install --user neo4j-haystack faiss-haystack || true) && mkdir -p /workspaces/haystack-fast-api/.faiss",
+	// postCreate: workspace ownership, uv, neo4j-haystack (FAISS not installed by default)
+	"postCreateCommand": "sudo chown -R vscode:vscode /workspaces/haystack-fast-api && curl -LsSf https://astral.sh/uv/install.sh | sh && export PATH=\"$HOME/.local/bin:$PATH\" && (uv pip install neo4j-haystack || pip install --user neo4j-haystack || true)",
 
 	"customizations": {
 		"vscode": {
@@ -28,7 +27,7 @@
 				"pgsql.connections": [
 					{
 						"profileName": "Haystack Local (R/W)",
-						"host": "db",
+						"host": "postgres-haystack",
 						"port": 5432,
 						"database": "heavy_rental",
 						"user": "postgres",
