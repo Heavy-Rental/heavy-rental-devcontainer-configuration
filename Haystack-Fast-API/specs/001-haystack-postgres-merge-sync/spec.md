@@ -6,7 +6,7 @@
 
 **Status**: Implemented
 
-**Input**: User description: "Add a writable PostgreSQL database to the Haystack Fast API devcontainer that merge-syncs from Heavy-Rental-REST-API `postgres-primary` (`heavy_rental`) every 24 hours, with an option to halt when the primary connection cannot be detected. Local-only rows must be retained on sync."
+**Input**: User description: "Add a writable PostgreSQL database to the Haystack Fast API devcontainer that merge-syncs from Heavy-Rental-REST-API `postgres-primary` (`heavy_rental`) on a near-real-time poll (default 60s), with skip-by-default when primary is unreachable and an option to halt. Local-only rows must be retained on sync."
 
 **As-built notes**: FDW-based merge upsert; PK or unique merge keys; additive schema evolution by default; opt-in parity flags (`DROP_ORPHAN_COLUMNS`, indexes, safe type widenings, `SYNC_MODE=mirror`). Runtime checks: [verification.md](./verification.md). OpenSpec SoT: `openspec/specs/haystack-devcontainer/spec.md`.
 
@@ -18,7 +18,7 @@ As a Haystack developer, I open the Haystack Fast API devcontainer and have a lo
 
 **Why this priority**: Without a local writable database, merge sync and local development against Postgres are impossible.
 
-**Independent Test**: Start only the Haystack Compose stack’s `db` service (or full stack). Connect as the app user and successfully `INSERT`, `SELECT`, `UPDATE`, and `DELETE` rows.
+**Independent Test**: Start only the Haystack Compose stack’s `postgres-haystack` service (or full stack). Connect as the app user and successfully `INSERT`, `SELECT`, `UPDATE`, and `DELETE` rows.
 
 **Acceptance Scenarios**:
 
@@ -54,24 +54,24 @@ As a Haystack developer, if the REST API primary cannot be detected, the sync pr
 
 **Acceptance Scenarios**:
 
-1. **Given** `HALT_ON_PRIMARY_UNAVAILABLE` is `true` and `postgres-primary` cannot be detected after the configured retries, **When** the sync process evaluates connectivity, **Then** it does not modify local application tables and the sync job stops (halts).
-2. **Given** `HALT_ON_PRIMARY_UNAVAILABLE` is `false` and `postgres-primary` cannot be detected, **When** the sync process evaluates connectivity, **Then** it skips the merge for that cycle, leaves local data intact, and waits for the next interval.
+1. **Given** `HALT_ON_PRIMARY_UNAVAILABLE` is `false` (default) and `postgres-primary` cannot be detected, **When** the sync process evaluates connectivity, **Then** it skips the merge for that cycle, leaves local data intact, and waits for the next interval.
+2. **Given** `HALT_ON_PRIMARY_UNAVAILABLE` is `true` and `postgres-primary` cannot be detected after the configured retries, **When** the sync process evaluates connectivity, **Then** it does not modify local application tables and the sync job stops (halts).
 3. **Given** the sync job has halted or skipped, **When** the developer continues using the Haystack app against the local database, **Then** the local database remains healthy and accepts read/write operations.
 
 ---
 
-### User Story 4 - Automatic refresh every 24 hours (Priority: P2)
+### User Story 4 - Near-real-time automatic refresh (Priority: P2)
 
 As a Haystack developer, my local database is refreshed from primary on a 24-hour cadence without manual intervention, after an initial attempt when the sync service starts.
 
 **Why this priority**: Periodic refresh keeps local data useful over multi-day sessions; less critical than first-run merge and local DB availability.
 
-**Independent Test**: Configure a short interval for test (e.g. 60 seconds); observe at least two successful merge cycles; restore default 24h for production of the config.
+**Independent Test**: With default interval (60s) or a short override, observe at least two successful merge cycles; optionally raise interval for lighter load.
 
 **Acceptance Scenarios**:
 
 1. **Given** the sync service starts and primary is reachable, **When** the service finishes initialization, **Then** it attempts a merge cycle before sleeping for the configured interval.
-2. **Given** the default configuration, **When** a successful cycle completes, **Then** the next automatic attempt occurs after 24 hours (86400 seconds), unless the interval environment variable is overridden.
+2. **Given** the default configuration, **When** a successful cycle completes, **Then** the next automatic attempt occurs after 60 seconds, unless the interval environment variable is overridden.
 3. **Given** primary remains reachable across intervals, **When** each interval elapses, **Then** another merge cycle runs without requiring the developer to run a command.
 
 ---
@@ -121,7 +121,7 @@ As a Haystack developer, I can adjust sync interval and halt-on-unavailable beha
 - **FR-011**: When primary cannot be detected and halt mode is enabled, the sync process MUST NOT modify local application table data and MUST stop further scheduled merges in that process lifetime (halt).
 - **FR-012**: When primary cannot be detected and halt mode is disabled, the sync process MUST skip the merge for that cycle, leave local data intact, and wait for the next interval.
 - **FR-013**: The sync process MUST attempt a merge cycle at service start (when local DB is ready), then wait for the configured interval before subsequent attempts.
-- **FR-014**: The default sync interval MUST be 24 hours (86400 seconds).
+- **FR-014**: The default sync interval MUST be 60 seconds (near-real-time poll; overridable).
 - **FR-015**: Sync interval and halt-on-unavailable behavior MUST be configurable via environment variables.
 - **FR-016**: Local database host port mapping, if published, MUST avoid conflict with REST API primary host port `5432` and replica host port `5433` (recommended host port `5434`).
 - **FR-017**: Credentials and connection settings for local development MAY use simple shared dev defaults aligned with the REST API stack; they are not production secrets.
@@ -134,8 +134,8 @@ As a Haystack developer, I can adjust sync interval and halt-on-unavailable beha
 ### Key Entities
 
 - **Source database (`postgres-primary`)**: REST API primary PostgreSQL instance on `heavy-rental-network`; database name `heavy_rental`; authoritative for shared domain rows during merge.
-- **Local database (`postgres-haystack` / Compose service `db`)**: Writable PostgreSQL owned by the Haystack stack; target of app R/W and merge upserts.
-- **Sync job (`db-sync`)**: Long-running process that checks connectivity, merges, and sleeps on an interval.
+- **Local database (Compose service / container `postgres-haystack`)**: Writable PostgreSQL owned by the Haystack stack; target of app R/W and merge upserts.
+- **Sync job (`postgres-haystack-sync`)**: Long-running process that checks connectivity, merges, and sleeps on an interval.
 - **Sync configuration**: Environment-driven settings (hosts, credentials, interval, halt, evolution, opt-in parity flags). See [contracts/db-sync-env.md](./contracts/db-sync-env.md).
 - **Merge key**: Primary key columns, or a designated unique constraint/index when no PK; used for `ON CONFLICT`.
 - **Local-only row**: A row in the local database whose merge key does not exist on the source at sync time.
@@ -144,12 +144,12 @@ As a Haystack developer, I can adjust sync interval and halt-on-unavailable beha
 
 ### Measurable Outcomes
 
-- **SC-001**: A developer can start the Haystack stack and perform a successful local write within 5 minutes of a healthy `db` service (excluding image pull time).
+- **SC-001**: A developer can start the Haystack stack and perform a successful local write within 5 minutes of a healthy `postgres-haystack` service (excluding image pull time).
 - **SC-002**: With primary available, one successful sync cycle results in sampled primary rows being readable on the local database.
 - **SC-003**: After inserting a local-only row and running sync, that row is still present (100% retention of the tested local-only key).
 - **SC-004**: After changing a shared-key row on primary and syncing, local non-key values match primary for that key.
 - **SC-005**: With primary stopped and halt enabled, the sync process stops without deleting pre-existing local rows; local DB remains accepting connections.
-- **SC-006**: Default configuration schedules merges 24 hours apart after the initial start-of-service attempt.
+- **SC-006**: Default configuration schedules merges 60 seconds apart after the initial start-of-service attempt.
 - **SC-007**: Changing `SYNC_INTERVAL_SECONDS` to 60 produces a second merge attempt within approximately 60–90 seconds after the first successful cycle (allowing for merge duration).
 - **SC-008** (optional extended): Unique-only table merges when `ALLOW_UNIQUE_MERGE_KEY=true`; new source columns appear locally when `SCHEMA_EVOLUTION=true`.
 - **SC-009** (optional extended): With default flags, orphan local columns are not dropped; startup logs show `mode=merge` and opt-in flags false.

@@ -11,7 +11,7 @@ Add in-process FAISSDocumentStore support to the Haystack Compose/devcontainer: 
 - Package: `faiss-haystack` (CPU) via `uv` (postCreate or project deps)
 - Env: `FAISS_INDEX_PATH`, optional `FAISS_EMBEDDING_DIM`, `FAISS_INDEX_STRING`
 - Persistence: workspace path under existing `haystack-fast-api-data` volume (Option A)
-- Complements Neo4j (`neo4j-haystack`) and Postgres (`db` / `db-sync`)
+- Complements Neo4j (`neo4j-haystack`) and Postgres (`postgres-haystack` / `postgres-haystack-sync`)
 
 ## Structure
 

@@ -15,8 +15,20 @@ That document is the source of truth for runtime verification. This page is a sh
 
 1. Docker with Compose v2  
 2. Network (once): `docker network create heavy-rental-network`  
-3. REST API stack running so **`postgres-primary`** is healthy  
-4. Haystack stack running (`db`, `db-sync`, `haystack-fast-api`)
+3. REST API stack running so **`postgres-primary`** is healthy (shared network)  
+4. Haystack stack running (`postgres-haystack`, `postgres-haystack-sync`, `haystack-fast-api`, plus `neo4j` when full stack)
+
+## Baseline runbook (T0)
+
+| Check | Expect |
+|---|---|
+| Network exists | `docker network inspect heavy-rental-network` succeeds |
+| Primary up | Container `postgres-primary` healthy on shared network |
+| Local PG | `postgres-haystack` healthy; host port **5434** |
+| Sync | `postgres-haystack-sync` running (`unless-stopped`); logs show merge or skip |
+| Near-RT default | `SYNC_INTERVAL_SECONDS=60`, `HALT_ON_PRIMARY_UNAVAILABLE=false` |
+| Halt path (optional) | Set halt `true` + recreate sync → job exits when primary down; local PG still R/W |
+| Staging schema | After merge, `primary_snapshot` may exist (FDW staging; expected) |
 
 ## Start Haystack stack (summary)
 
@@ -28,9 +40,10 @@ docker compose up -d
 
 | Service | Container | Role |
 |---|---|---|
-| `db` | `postgres-haystack` | Writable local Postgres |
-| `db-sync` | `postgres-haystack-sync` | Merge scheduler |
-| `haystack-fast-api` | `haystack-fast-api` | App (uses local `db`) |
+| `postgres-haystack` | `postgres-haystack` | Writable local Postgres |
+| `postgres-haystack-sync` | `postgres-haystack-sync` | Near-RT merge scheduler (60s poll) |
+| `haystack-fast-api` | `haystack-fast-api` | App (uses local `postgres-haystack`) |
+| `neo4j` | `neo4j-haystack` | Graph / DocumentStore (see specs/002) |
 
 ## Minimal smoke (optional)
 

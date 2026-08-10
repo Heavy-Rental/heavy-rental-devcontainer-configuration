@@ -45,4 +45,4 @@
 
 ### Complementary store
 
-Postgres (`db` / `postgres-haystack`) remains the relational domain store; not replaced by Neo4j.
+Postgres (`postgres-haystack`) remains the relational domain store; not replaced by Neo4j.

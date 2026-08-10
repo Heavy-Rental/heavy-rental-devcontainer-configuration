@@ -10,9 +10,9 @@
 
 Haystack Fast API devcontainer Compose provides:
 
-1. Writable **PostgreSQL 17** (`db` / `postgres-haystack`) for app R/W  
-2. Long-running **`db-sync`** job that **merge-upserts** from REST API **`postgres-primary`** (`heavy_rental`) via **postgres_fdw**  
-3. Default **24h** schedule (first attempt at start); **halt** if primary unreachable (configurable skip)  
+1. Writable **PostgreSQL 17** (`postgres-haystack`) for app R/W  
+2. Long-running **`postgres-haystack-sync`** job that **merge-upserts** from REST API **`postgres-primary`** (`heavy_rental`) via **postgres_fdw**  
+3. Default **60s** near-RT poll schedule (first attempt at start); **skip** if primary unreachable (configurable halt)  
 4. Merge keys: **PK preferred**, else **UNIQUE**  
 5. Default **additive** schema evolution; **opt-in** parity flags for drops, indexes, safe type widenings; `SYNC_MODE=mirror` enables parity set  
 
@@ -43,7 +43,7 @@ No physical streaming replica. Local-only rows retained under default merge mode
 
 ```text
 Haystack-Fast-API/.devcontainer/
-├── docker-compose.yml          # haystack-fast-api, db, db-sync
+├── docker-compose.yml          # haystack-fast-api, postgres-haystack, postgres-haystack-sync
 ├── devcontainer.json           # forwardPorts 5434, pgsql profiles, uv postCreate
 ├── Dockerfile
 └── scripts/
@@ -63,8 +63,8 @@ Haystack-Fast-API/openspec/
 
 | Area | Status |
 |---|---|
-| Local `db` + app `DATABASE_URL` | Done |
-| `db-sync` + 24h loop + halt/skip | Done |
+| Local `postgres-haystack` + app `DATABASE_URL` | Done |
+| `postgres-haystack-sync` + 60s near-RT loop + skip/halt | Done (T1) |
 | FDW staging + PK/unique upsert | Done |
 | Additive schema evolution | Done |
 | Opt-in drop / indexes / type widen / `SYNC_MODE` | Done |
