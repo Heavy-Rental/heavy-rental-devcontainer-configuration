@@ -147,6 +147,26 @@ Full runbooks: [`specs/001-rest-api-devcontainer/verification.md`](./specs/001-r
 
 ---
 
+## Haystack fleet mirror (Phase 4 / peer stack)
+
+This pack’s **primary** Postgres is the **source of truth** for shared fleet domain data used by Haystack Fast API.
+
+```text
+Heavy-Rental-REST-API                 Haystack-Fast-API
+postgres-primary (heavy_rental)  ◄──  postgres-haystack-sync (poll ~60s)
+                                      postgres-haystack (local mirror)
+```
+
+| Concern | Owner |
+|---------|--------|
+| OLTP primary + app | **This pack** (`postgres-primary` on `heavy-rental-network`) |
+| Near-RT merge-sync, allowlist, lag metrics | **Haystack-Fast-API** |
+| D0 schema inventory | [specs/001-rest-api-devcontainer/contracts/schema-contract.md](./specs/001-rest-api-devcontainer/contracts/schema-contract.md) |
+
+Default Haystack allowlist tables: **`asset`**, **`booking`**, **`category`**. This pack does **not** run a push/sync job.
+
+---
+
 ## Credentials (local dev only)
 
 | Item | Value |

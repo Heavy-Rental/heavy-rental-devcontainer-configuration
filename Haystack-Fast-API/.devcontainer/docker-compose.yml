@@ -79,7 +79,10 @@ services:
       TARGET_DB: heavy_rental
       STAGING_SCHEMA: primary_snapshot
       # Near-RT poll (dev SLA ~60s). Override upward for lighter load (e.g. "300" or "86400").
+      # Phase 4 T1: lag/duration logged each cycle (METRICS duration_ms, expected_max_lag_seconds).
       SYNC_INTERVAL_SECONDS: "60"
+      # Phase 4 T2 / D0: deterministic fleet tables (see contracts/schema-contract.md). Use "all" for full public merge.
+      SYNC_TABLE_ALLOWLIST: "asset,booking,category"
       # Skip cycle + sleep when primary down (pairs with unless-stopped; avoid halt+restart storms).
       HALT_ON_PRIMARY_UNAVAILABLE: "false"
       PRIMARY_CHECK_RETRIES: "5"

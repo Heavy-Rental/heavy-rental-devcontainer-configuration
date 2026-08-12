@@ -14,6 +14,7 @@ Operators MUST promote the chosen pack’s nested `.devcontainer` **one level up
 Change history:
 
 - `openspec/changes/archive/2026-08-09-add-rest-api-devcontainer-variants/`
+- `openspec/changes/archive/2026-08-12-phase4-d0-schema-contract-fleet-source/` — Phase 4 D0 schema contract + primary as Haystack fleet pull source
 
 Spec Kit: `specs/001-rest-api-devcontainer/`.
 
@@ -101,3 +102,23 @@ All services in the active pack MUST join external network `heavy-rental-network
 - **GIVEN** `heavy-rental-network` exists
 - **WHEN** the active Compose stack starts
 - **THEN** app and primary (and replica if present) are attached to that network
+
+### Requirement: Primary is Haystack fleet pull source (Phase 4 T0)
+
+Container `postgres-primary` (database `heavy_rental`) MUST remain reachable on `heavy-rental-network` as the **read source** for peer Haystack merge-sync. This pack MUST NOT implement the Haystack merge-sync job.
+
+#### Scenario: Peer can resolve primary
+
+- **GIVEN** both REST API and Haystack stacks are on `heavy-rental-network` and primary is healthy
+- **WHEN** Haystack sync resolves hostname `postgres-primary`
+- **THEN** connectivity checks to port 5432 can succeed
+
+### Requirement: D0 fleet schema contract (Phase 4)
+
+Spec Kit MUST publish a versioned producer schema contract at `specs/001-rest-api-devcontainer/contracts/schema-contract.md` documenting default fleet tables (`asset`, `booking`, `category`) for Haystack allowlist alignment.
+
+#### Scenario: Contract present
+
+- **GIVEN** a checkout of this repository
+- **WHEN** an operator opens the REST Spec Kit contracts folder
+- **THEN** `schema-contract.md` exists at version 1.0

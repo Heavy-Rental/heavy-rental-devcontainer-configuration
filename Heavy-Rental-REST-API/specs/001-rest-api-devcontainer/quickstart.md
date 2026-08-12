@@ -20,3 +20,9 @@ Then in VS Code: open **`Heavy-Rental-REST-API`** → **Dev Containers: Reopen i
 | Without | `heavy-rental-rest-api`, `postgres-primary` |
 
 Primary: `localhost:5432` · Replica (if chosen): `localhost:5433` · App: port `8080`.
+
+### Phase 4 — Haystack fleet mirror (peer)
+
+- Primary container **`postgres-primary`** on **`heavy-rental-network`** is the source Haystack pulls from.
+- Domain tables: [contracts/schema-contract.md](./contracts/schema-contract.md) (default allowlist: `asset`, `booking`, `category`).
+- Merge-sync runs in **Haystack-Fast-API** (`postgres-haystack-sync`), not in this pack.

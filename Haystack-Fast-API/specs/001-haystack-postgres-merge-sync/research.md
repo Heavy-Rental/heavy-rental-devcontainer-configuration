@@ -87,6 +87,8 @@
 | Unique without PK? | Yes (default on) |
 | Schema evolution? | Additive by default (ADD COLUMN / CREATE TABLE) |
 | Column drops / FKs / full type changes? | Opt-in or deferred; not default |
+| Table allowlist? | **Default finite list** `asset,booking,category` (Phase 4 T2 / D0); `all`/`*` restores full public |
+| Lag metrics? | Log `duration_ms` + poll SLA bound (not CDC / not Prometheus required) |
 
 ## 10. Risks
 
@@ -99,6 +101,16 @@
 | Credential mismatch | Align dev defaults with REST API stack documentation |
 
 ## 11. Post-v1 decisions (as-built)
+
+### Phase 4 — Allowlist vs full public (T2)
+
+**Decision**: Default **deterministic allowlist** for fleet LTM (`asset,booking,category`) aligned with D0 schema contract. Operators set `SYNC_TABLE_ALLOWLIST=all` for sandbox full-schema merge. FDW uses `LIMIT TO` when the list is finite.
+
+**Rationale**: Phase 4 exit requires a deterministic table set; full public merge is still available for debugging.
+
+### Phase 4 — Lag logging (T1)
+
+**Decision**: Emit structured log `METRICS cycle` / `METRICS merge` with `duration_ms` and `expected_max_lag_seconds≈SYNC_INTERVAL_SECONDS`. No Prometheus endpoint in this phase.
 
 ### Unique-key merge
 

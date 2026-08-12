@@ -6,6 +6,8 @@
 
 Document two as-built Spring Boot devcontainer packs and the operator workflow that promotes one pack’s `.devcontainer` to `Heavy-Rental-REST-API/.devcontainer`. No application code changes.
 
+**Phase 4 (S4 peer):** primary remains fleet **source of truth** for Haystack merge-sync (T0). D0 producer [schema-contract.md](./contracts/schema-contract.md) freezes default tables (`asset`, `booking`, `category`). Sync job is **not** implemented here (Haystack-Fast-API owns T1/T2).
+
 ## Technical Context
 
 | Item | Value |

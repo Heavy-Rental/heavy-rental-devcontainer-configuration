@@ -12,7 +12,8 @@ openspec/
         ├── 2026-08-08-add-haystack-neo4j/
         ├── 2026-08-09-add-haystack-faiss/
         ├── 2026-08-09-add-neo4j-vscode-extension/
-        └── 2026-08-09-document-neo4j-vscode-ui-connections/
+        ├── 2026-08-09-document-neo4j-vscode-ui-connections/
+        └── 2026-08-12-phase4-fleet-mirror-allowlist-d0/
 ```
 
 ## Source of truth
@@ -20,6 +21,7 @@ openspec/
 **[specs/haystack-devcontainer/spec.md](./specs/haystack-devcontainer/spec.md)** — agreed **current** behavior:
 
 - Writable local Postgres (`postgres-haystack`) + near-RT merge-sync (`postgres-haystack-sync`, default 60s poll) from `postgres-primary`
+- Phase 4: `SYNC_TABLE_ALLOWLIST` (default `asset,booking,category`), cycle lag `METRICS`, D0 schema contract
 - Unique-key merge, additive schema evolution, opt-in parity flags / `SYNC_MODE`
 - **Neo4j 5** (`neo4j` / `neo4j-haystack`) for Haystack DocumentStore (`neo4j-haystack` package)
 - **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) installed in the devcontainer; connections are UI-managed (not `pgsql.connections`-style settings)
@@ -35,6 +37,7 @@ openspec/
 | [2026-08-09-add-haystack-faiss](./changes/archive/2026-08-09-add-haystack-faiss/) | FAISS DocumentStore (historical; later removed from default stack) |
 | [2026-08-09-add-neo4j-vscode-extension](./changes/archive/2026-08-09-add-neo4j-vscode-extension/) | Neo4j for VS Code extension |
 | [2026-08-09-document-neo4j-vscode-ui-connections](./changes/archive/2026-08-09-document-neo4j-vscode-ui-connections/) | Neo4j IDE connections are UI-managed (not settings profiles) |
+| [2026-08-12-phase4-fleet-mirror-allowlist-d0](./changes/archive/2026-08-12-phase4-fleet-mirror-allowlist-d0/) | Phase 4 T1 lag metrics, T2 allowlist, D0 schema contract |
 
 **Spec Kit (active):**
 

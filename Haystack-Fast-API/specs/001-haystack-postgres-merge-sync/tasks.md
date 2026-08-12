@@ -130,6 +130,17 @@
 
 ---
 
+## Phase 9: Phase 4 / S4 fleet mirror closeout (T1 lag, T2 allowlist, D0)
+
+- [x] T039 [T2] `SYNC_TABLE_ALLOWLIST` env (default `asset,booking,category`; `all`/`*` for full public)
+- [x] T040 [T2] Filter merge candidates + FDW `LIMIT TO` when allowlist is finite
+- [x] T041 [T1] Per-cycle `METRICS` logs: `duration_ms`, `expected_max_lag_seconds`, merge counts
+- [x] T042 [D0] Consumer [contracts/schema-contract.md](./contracts/schema-contract.md) v1.0
+- [x] T043 Compose default `SYNC_TABLE_ALLOWLIST` + contract/spec/OpenSpec alignment
+- [ ] T044 Operator verify SC-010–SC-012 (allowlist + metrics + D0 docs) — *after rebuild*
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

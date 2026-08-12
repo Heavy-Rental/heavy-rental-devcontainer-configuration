@@ -8,7 +8,7 @@
 
 **Input**: User description: "Add a writable PostgreSQL database to the Haystack Fast API devcontainer that merge-syncs from Heavy-Rental-REST-API `postgres-primary` (`heavy_rental`) on a near-real-time poll (default 60s), with skip-by-default when primary is unreachable and an option to halt. Local-only rows must be retained on sync."
 
-**As-built notes**: FDW-based merge upsert; PK or unique merge keys; additive schema evolution by default; opt-in parity flags (`DROP_ORPHAN_COLUMNS`, indexes, safe type widenings, `SYNC_MODE=mirror`). Runtime checks: [verification.md](./verification.md). OpenSpec SoT: `openspec/specs/haystack-devcontainer/spec.md`.
+**As-built notes**: FDW-based merge upsert; PK or unique merge keys; additive schema evolution by default; opt-in parity flags (`DROP_ORPHAN_COLUMNS`, indexes, safe type widenings, `SYNC_MODE=mirror`). **Phase 4 / S4:** default table allowlist `asset,booking,category` (`SYNC_TABLE_ALLOWLIST`); cycle lag/duration `METRICS` logs; D0 [schema-contract.md](./contracts/schema-contract.md). Runtime checks: [verification.md](./verification.md). OpenSpec SoT: `openspec/specs/haystack-devcontainer/spec.md`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -91,10 +91,40 @@ As a Haystack developer, I can adjust sync interval and halt-on-unavailable beha
 
 ---
 
+### User Story 6 - Deterministic fleet table allowlist (Priority: P1) — Phase 4 T2
+
+As a Haystack developer, merge-sync only pulls the fleet LTM tables needed for recommend (asset, booking, category by default), not every public table on primary.
+
+**Why this priority**: Deterministic table set is a Phase 4 exit criterion and keeps the sandbox focused on fleet domain data.
+
+**Independent Test**: Primary has allowlisted and non-allowlisted tables; after a successful cycle only allowlisted tables are required to appear/update locally; logs show non-allowlisted skips.
+
+**Acceptance Scenarios**:
+
+1. **Given** default `SYNC_TABLE_ALLOWLIST=asset,booking,category`, **When** a successful sync cycle completes, **Then** only those tables (when present and mergeable) are merged from primary.
+2. **Given** a public table on primary that is not in the allowlist, **When** a successful sync cycle completes, **Then** that table is not required to be created/updated locally and a skip is logged.
+3. **Given** `SYNC_TABLE_ALLOWLIST=all` (or `*`), **When** a successful sync cycle completes, **Then** all mergeable public tables are eligible for merge (pre-Phase-4 behavior).
+
+---
+
+### User Story 7 - Cycle lag / duration metrics (Priority: P2) — Phase 4 T1
+
+As an operator, each sync cycle logs duration and poll-based lag expectations so I can confirm near-RT refresh health without Prometheus.
+
+**Independent Test**: Inspect `postgres-haystack-sync` logs for `METRICS cycle` with `duration_ms` and `expected_max_lag_seconds`.
+
+**Acceptance Scenarios**:
+
+1. **Given** a completed cycle (success, skip, or fail), **When** logs are inspected, **Then** a metrics line includes `duration_ms` and `interval_seconds` / `expected_max_lag_seconds`.
+2. **Given** a successful merge cycle, **When** logs are inspected, **Then** merge metrics include allowlist-related counts (`merged`, `skipped_not_allowlisted`, etc.).
+
+---
+
 ### Edge Cases
 
 - What happens when primary is reachable but authentication fails? Treat as unavailable for merge; do not modify local app tables; apply halt/skip policy.
 - What happens when a table has no primary key or unique constraint? Skip that table with a clear log warning by default (do not truncate unless an explicit optional mode is enabled later).
+- What happens when a public table is not on `SYNC_TABLE_ALLOWLIST`? It is skipped (list mode); not imported via FDW LIMIT TO.
 - What happens if local schema is missing tables that exist on primary? Sync creates missing tables (`LIKE` staging) before data merge when schema evolution is enabled (default).
 - What happens if primary adds a column to an existing table? With `SCHEMA_EVOLUTION=true` (default), local table gets `ADD COLUMN` then upsert fills data.
 - What happens if primary removes a column? With default merge mode, local column is **kept**. With `DROP_ORPHAN_COLUMNS=true` or `SYNC_MODE=mirror`, local column may be dropped (data loss).
@@ -130,6 +160,10 @@ As a Haystack developer, I can adjust sync interval and halt-on-unavailable beha
 - **FR-020**: Under default merge mode, the system MUST NOT drop local-only columns, MUST NOT auto-rename columns, and MUST NOT apply arbitrary type changes.
 - **FR-021**: Opt-in flags MUST exist (default off) for: `DROP_ORPHAN_COLUMNS`, `SYNC_INDEXES`, `SYNC_UNIQUE_INDEXES`, `SAFE_TYPE_WIDENINGS`; `SYNC_MODE=mirror` MAY enable the parity set.
 - **FR-022**: `SYNC_FOREIGN_KEYS` MAY be accepted as configuration but MUST NOT silently invent validated FKs until implemented (current: log and skip).
+- **FR-023** (Phase 4 T2): By default the sync process MUST merge only tables listed in `SYNC_TABLE_ALLOWLIST` (default `asset,booking,category` per D0 schema contract). Values `all` or `*` MUST restore full public merge.
+- **FR-024** (Phase 4 T2): Tables present on primary but not on the allowlist (list mode) MUST NOT be required to be merged; skips MUST be logged.
+- **FR-025** (Phase 4 T1): Each cycle MUST log duration (`duration_ms`) and poll lag expectation (`expected_max_lag_seconds` ≈ `SYNC_INTERVAL_SECONDS`).
+- **FR-026** (Phase 4 D0): Spec Kit MUST publish a versioned [schema-contract.md](./contracts/schema-contract.md) binding allowlist defaults to producer domain tables.
 
 ### Key Entities
 
@@ -139,6 +173,8 @@ As a Haystack developer, I can adjust sync interval and halt-on-unavailable beha
 - **Sync configuration**: Environment-driven settings (hosts, credentials, interval, halt, evolution, opt-in parity flags). See [contracts/db-sync-env.md](./contracts/db-sync-env.md).
 - **Merge key**: Primary key columns, or a designated unique constraint/index when no PK; used for `ON CONFLICT`.
 - **Local-only row**: A row in the local database whose merge key does not exist on the source at sync time.
+- **Table allowlist**: Deterministic set of `public` relation names eligible for merge (`SYNC_TABLE_ALLOWLIST`).
+- **D0 schema contract**: Versioned inventory of fleet domain tables shared with REST API producer docs.
 
 ## Success Criteria *(mandatory)*
 
@@ -153,6 +189,9 @@ As a Haystack developer, I can adjust sync interval and halt-on-unavailable beha
 - **SC-007**: Changing `SYNC_INTERVAL_SECONDS` to 60 produces a second merge attempt within approximately 60–90 seconds after the first successful cycle (allowing for merge duration).
 - **SC-008** (optional extended): Unique-only table merges when `ALLOW_UNIQUE_MERGE_KEY=true`; new source columns appear locally when `SCHEMA_EVOLUTION=true`.
 - **SC-009** (optional extended): With default flags, orphan local columns are not dropped; startup logs show `mode=merge` and opt-in flags false.
+- **SC-010** (Phase 4 T2): Default allowlist is deterministic (`asset,booking,category`); non-allowlisted public tables are not required to merge.
+- **SC-011** (Phase 4 T1): Sync logs include `METRICS cycle` with `duration_ms` after each cycle.
+- **SC-012** (Phase 4 D0): [contracts/schema-contract.md](./contracts/schema-contract.md) exists at version 1.0 and matches allowlist defaults.
 
 ## Assumptions
 
