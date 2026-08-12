@@ -1,6 +1,4 @@
-# Ignore everything under the project folders
 
-/Heavy-Rental-Web-Portal/**
 
 # But keep the .devcontainer folder inside each one
 !/Haystack-Fast-API/.devcontainer/

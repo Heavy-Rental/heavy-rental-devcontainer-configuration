@@ -23,6 +23,8 @@ Spring Boot Java REST API devcontainer packs under `Heavy-Rental-REST-API/`, wit
 
 **Phase 4:** Primary is the fleet LTM **pull source** for Haystack-Fast-API merge-sync. See schema contract and operator README.
 
+**Phase 5 peer:** Haystack local Postgres is **pgvector platform ready** (T5/D4). This pack does **not** install pgvector on `postgres-primary`. See [`../../../Haystack-Fast-API/specs/004-haystack-pgvector/`](../../../Haystack-Fast-API/specs/004-haystack-pgvector/).
+
 **Packs (as-built):**
 
 - `Spring Boot REST API devcontainer with PostgreSQL Read Replica/.devcontainer/`

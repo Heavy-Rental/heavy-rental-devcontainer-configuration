@@ -9,7 +9,7 @@ Official **neo4j-haystack** integration provides `Neo4jDocumentStore` for Haysta
 | Option | Notes |
 |---|---|
 | In-memory / local file stores | Fine for unit tests; not shared persistent graph |
-| Postgres only (pgvector) | Good for vectors; weaker native graph traversals |
+| Postgres only (pgvector) | Good for vectors; weaker native graph traversals — **platform ready** in stack as `004-haystack-pgvector` (T5/D4); durable project chunks target I1, not a Neo4j replacement for graph |
 | Neo4j Aura | Cloud; extra account; not offline-friendly for this devcontainer |
 | **Local Neo4j Compose** | Best fit for heavy-rental local multi-service network |
 

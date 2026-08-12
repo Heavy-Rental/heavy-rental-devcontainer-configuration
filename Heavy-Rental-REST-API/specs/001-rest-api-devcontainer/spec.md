@@ -89,6 +89,7 @@ As a developer using the **without replica** pack, no replica service is require
 - **FR-012** (Phase 4 T0): Primary container `postgres-primary` MUST remain on external network `heavy-rental-network` so peer Haystack merge-sync can resolve and read `heavy_rental`.
 - **FR-013** (Phase 4 D0): Spec Kit MUST publish a versioned fleet domain [schema-contract.md](./contracts/schema-contract.md) (producer) listing tables used by Haystack fleet LTM allowlist (`asset`, `booking`, `category` by default).
 - **FR-014** (Phase 4): This pack MUST NOT implement Haystack merge-sync; REST primary is **pull source only**. Sync job lives in Haystack-Fast-API.
+- **FR-015** (Phase 5 peer): Primary MUST NOT require pgvector / extension `vector`. Haystack may enable pgvector on its local DB independently.
 
 ### Key Entities
 
@@ -107,6 +108,7 @@ As a developer using the **without replica** pack, no replica service is require
 - **SC-005**: Spec Kit / OpenSpec names match as-built service, container, and port identifiers.
 - **SC-006** (Phase 4 D0): `contracts/schema-contract.md` v1.0 exists and documents default fleet tables.
 - **SC-007** (Phase 4 T0): Primary is documented as Haystack fleet pull source on `heavy-rental-network`.
+- **SC-008** (Phase 5 peer): Docs state primary does not require pgvector when Haystack T5/D4 is enabled.
 
 ## Assumptions
 

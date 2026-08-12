@@ -154,16 +154,20 @@ This pack’s **primary** Postgres is the **source of truth** for shared fleet d
 ```text
 Heavy-Rental-REST-API                 Haystack-Fast-API
 postgres-primary (heavy_rental)  ◄──  postgres-haystack-sync (poll ~60s)
-                                      postgres-haystack (local mirror)
+  (plain Postgres 17 SoT)             postgres-haystack (local mirror
+                                       + pgvector platform — Phase 5 T5/D4)
 ```
 
 | Concern | Owner |
 |---------|--------|
 | OLTP primary + app | **This pack** (`postgres-primary` on `heavy-rental-network`) |
 | Near-RT merge-sync, allowlist, lag metrics | **Haystack-Fast-API** |
+| Pgvector platform (project vectors later) | **Haystack-Fast-API** (`pgvector/pgvector:pg17`; not on primary) |
 | D0 schema inventory | [specs/001-rest-api-devcontainer/contracts/schema-contract.md](./specs/001-rest-api-devcontainer/contracts/schema-contract.md) |
 
 Default Haystack allowlist tables: **`asset`**, **`booking`**, **`category`**. This pack does **not** run a push/sync job.
+
+**Phase 5 peer note:** Haystack local DB is **pgvector-ready** for a future indexing DocumentStore cutover (app I0/I1). This pack’s `postgres-primary` stays plain **`postgres:17`** and MUST NOT require the `vector` extension. See [`../Haystack-Fast-API/specs/004-haystack-pgvector/`](../Haystack-Fast-API/specs/004-haystack-pgvector/).
 
 ---
 
