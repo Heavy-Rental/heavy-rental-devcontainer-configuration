@@ -78,8 +78,10 @@ This feature does not introduce a new application domain model. It manages **dat
 | `SYNC_UNIQUE_INDEXES` | `false` | Unique secondary indexes |
 | `SAFE_TYPE_WIDENINGS` | `false` | Whitelisted type widenings |
 | `SYNC_FOREIGN_KEYS` | `false` | Reserved; not implemented |
+| `SYNC_TABLE_ALLOWLIST` | `asset,booking,category` | Phase 4 T2 deterministic fleet tables; `all`/`*` = full public |
 
-See full contract: [contracts/db-sync-env.md](./contracts/db-sync-env.md).
+See full contract: [contracts/db-sync-env.md](./contracts/db-sync-env.md).  
+D0 domain inventory: [contracts/schema-contract.md](./contracts/schema-contract.md).
 
 ### 6. Merge Key (per table)
 
@@ -100,7 +102,24 @@ See full contract: [contracts/db-sync-env.md](./contracts/db-sync-env.md).
 | `SAFE_TYPE_WIDENINGS=true` | e.g. int→bigint, longer varchar |
 | `SYNC_INDEXES` / `SYNC_UNIQUE_INDEXES` | CREATE missing secondary indexes (best-effort) |
 
-### 8. Row Classification (runtime, not stored)
+### 8. Table allowlist (Phase 4 T2)
+
+| Attribute | Description |
+|---|---|
+| Default | `asset`, `booking`, `category` (D0 schema contract v1.0) |
+| Mode all | `SYNC_TABLE_ALLOWLIST=all` or `*` |
+| Effect | FDW `LIMIT TO` when finite; non-listed public tables skipped |
+
+### 9. Cycle metrics (Phase 4 T1, logged)
+
+| Field | Description |
+|---|---|
+| `duration_ms` | Wall-clock cycle duration |
+| `interval_seconds` | Configured poll interval |
+| `expected_max_lag_seconds` | ≈ poll interval (not CDC) |
+| allowlist counts | `merged`, `skipped_no_key`, `skipped_not_allowlisted`, `failed` |
+
+### 10. Row Classification (runtime, not stored)
 
 | Class | Definition | Merge action |
 |---|---|---|

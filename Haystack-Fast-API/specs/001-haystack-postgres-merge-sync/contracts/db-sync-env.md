@@ -38,6 +38,7 @@ All values are strings in Compose; parsers MUST coerce integers/bools as documen
 | `SYNC_UNIQUE_INDEXES` | no | `false` | create unique secondary indexes from primary |
 | `SAFE_TYPE_WIDENINGS` | no | `false` | whitelisted type widenings only |
 | `SYNC_FOREIGN_KEYS` | no | `false` | reserved; not implemented (logs WARN if true) |
+| `SYNC_TABLE_ALLOWLIST` | no | `asset,booking,category` | comma-separated exact `public` relation names (Phase 4 T2 / D0). Values `all` or `*` merge every public table. See [schema-contract.md](./schema-contract.md) |
 
 ## Policy matrix (default-on vs opt-in)
 
@@ -86,16 +87,24 @@ When `SCHEMA_EVOLUTION` is true:
 | `true` | Log halt reason | Exit 0 (preferred) or non-zero; container SHOULD NOT restart-loop | Unchanged |
 | `false` | Log skip; sleep `SYNC_INTERVAL_SECONDS`; continue loop | No exit | Unchanged |
 
+## Table allowlist contract (Phase 4 T2)
+
+1. Default allowlist is **`asset,booking,category`** (D0 fleet LTM set).
+2. When mode is **list**, only allowlisted relations are FDW-imported (`LIMIT TO`) and merged.
+3. Public tables not on the allowlist MUST be skipped with a clear log (`not in SYNC_TABLE_ALLOWLIST`).
+4. When allowlist is **`all`** or **`*`**, behavior matches pre-Phase-4 full public merge.
+5. Physical names MUST match primary; override env if Spring uses different relation names.
+
 ## Merge contract (when source available)
 
 1. Ensure local target is ready.
 2. Ensure staging mechanism ready (FDW server/mapping or dump path).
-3. Refresh staging view of source public schema (or configured schemas).
-4. For each mergeable table with a primary key (or unique merge key):
+3. Refresh staging view of source public schema (or allowlisted tables only).
+4. For each **allowlisted** mergeable table with a primary key (or unique merge key):
    - `INSERT ... SELECT ... ON CONFLICT (merge_key) DO UPDATE SET ...` for non-key columns.
 5. Do not `DELETE` local keys absent from source.
 6. Skip tables without merge keys; log warning.
-7. Log success summary (tables processed, skipped, errors).
+7. Log success summary (tables processed, skipped, errors) including allowlist metrics.
 
 ### Failure mid-merge
 
@@ -127,6 +136,22 @@ Each cycle MUST emit human-readable logs including:
 - On merge: tables upserted / skipped / failed
 - Cycle end status: success | skipped | halted | failed
 
+### Lag / metrics logs (Phase 4 T1)
+
+Each cycle MUST also emit a `METRICS cycle` line (or equivalent) including:
+
+| Field | Meaning |
+|-------|---------|
+| `status` | `success` \| `skipped` \| `failed` \| `halted` |
+| `duration_ms` | Wall-clock cycle duration |
+| `interval_seconds` | Configured `SYNC_INTERVAL_SECONDS` |
+| `expected_max_lag_seconds` | Poll SLA bound (≈ interval; not CDC lag) |
+| `lag_note` | e.g. `poll_not_cdc` on merge paths |
+
+On merge, a `METRICS merge` line SHOULD include: `tables_candidates`, `merged`, `skipped_no_key`, `skipped_not_allowlisted`, `failed`, `allowlist_mode`.
+
+Prometheus exposition is still out of scope for this contract.
+
 ## Network contract
 
 | Endpoint | Direction | Port |
@@ -139,5 +164,6 @@ Both endpoints MUST be on Docker network `heavy-rental-network` (or equivalent s
 ## Non-goals (this contract)
 
 - HTTP/gRPC API surface
-- Metrics exposition format (Prometheus) — optional later
+- Metrics exposition format (Prometheus) — optional later (log metrics required)
 - Authentication beyond Postgres password env vars
+- Syncing tables outside `SYNC_TABLE_ALLOWLIST` when mode is list

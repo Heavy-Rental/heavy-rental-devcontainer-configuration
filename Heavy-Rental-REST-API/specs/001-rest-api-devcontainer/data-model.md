@@ -50,3 +50,13 @@
 |---------|------|-----------------------------|
 | `heavy-rental-rest-api-db-connection` | both | `db-primary:5432` |
 | `Replica (Read)` | with-replica only | `db-replica-one:5432` |
+
+## Fleet domain schema (Phase 4 D0)
+
+Shared inventory for Haystack merge-sync allowlist (producer view):
+
+**→ [contracts/schema-contract.md](./contracts/schema-contract.md)**
+
+Default physical tables: `asset`, `booking`, `category` on primary `heavy_rental` / `public`.
+
+Haystack **pulls** from `postgres-primary` on `heavy-rental-network`; this pack does not run a sync job.

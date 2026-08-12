@@ -15,6 +15,7 @@ Haystack Fast API devcontainer Compose provides:
 3. Default **60s** near-RT poll schedule (first attempt at start); **skip** if primary unreachable (configurable halt)  
 4. Merge keys: **PK preferred**, else **UNIQUE**  
 5. Default **additive** schema evolution; **opt-in** parity flags for drops, indexes, safe type widenings; `SYNC_MODE=mirror` enables parity set  
+6. **Phase 4:** default `SYNC_TABLE_ALLOWLIST=asset,booking,category`; cycle `METRICS` lag/duration logs; D0 schema contract  
 
 No physical streaming replica. Local-only rows retained under default merge mode.
 
@@ -65,12 +66,15 @@ Haystack-Fast-API/openspec/
 |---|---|
 | Local `postgres-haystack` + app `DATABASE_URL` | Done |
 | `postgres-haystack-sync` + 60s near-RT loop + skip/halt | Done (T1) |
+| Cycle lag/duration `METRICS` logs | Done (T1 lag) |
+| `SYNC_TABLE_ALLOWLIST` default fleet tables | Done (T2) |
+| D0 schema-contract.md (consumer) | Done (D0) |
 | FDW staging + PK/unique upsert | Done |
 | Additive schema evolution | Done |
 | Opt-in drop / indexes / type widen / `SYNC_MODE` | Done |
 | Multi-schema beyond `public` | Deferred (flag documented) |
 | FK sync | Reserved flag only |
-| Runtime verification SC-001–SC-007 | Operator (see verification.md) |
+| Runtime verification SC-001–SC-012 | Operator (see verification.md) |
 
 ## Constitution Check
 

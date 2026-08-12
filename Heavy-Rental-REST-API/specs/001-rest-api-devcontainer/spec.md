@@ -86,13 +86,17 @@ As a developer using the **without replica** pack, no replica service is require
 - **FR-009**: Devcontainer MUST use non-root `vscode` and fix workspace ownership in `postCreateCommand`.
 - **FR-010**: Devcontainer MUST install Java Pack, Spring Boot Extension Pack, and Postgres VS Code extension; `pgsql.connections` MUST match the active pack (primary only vs primary+replica).
 - **FR-011**: Forward ports MUST include **8080** and **5432** (replica host **5433** is Compose-mapped for with-replica pack).
+- **FR-012** (Phase 4 T0): Primary container `postgres-primary` MUST remain on external network `heavy-rental-network` so peer Haystack merge-sync can resolve and read `heavy_rental`.
+- **FR-013** (Phase 4 D0): Spec Kit MUST publish a versioned fleet domain [schema-contract.md](./contracts/schema-contract.md) (producer) listing tables used by Haystack fleet LTM allowlist (`asset`, `booking`, `category` by default).
+- **FR-014** (Phase 4): This pack MUST NOT implement Haystack merge-sync; REST primary is **pull source only**. Sync job lives in Haystack-Fast-API.
 
 ### Key Entities
 
 - **Pack folder**: Named directory holding a nested `.devcontainer` before promote.
 - **Active `.devcontainer`**: Configuration at `Heavy-Rental-REST-API/.devcontainer` after promote.
-- **Primary**: Writable Postgres for the API.
+- **Primary**: Writable Postgres for the API; fleet domain **source of truth** for Haystack mirror.
 - **Replica**: Optional streaming standby (with-replica pack only).
+- **D0 schema contract**: Versioned inventory of fleet tables shared with Haystack consumer docs.
 
 ## Success Criteria
 
@@ -101,6 +105,8 @@ As a developer using the **without replica** pack, no replica service is require
 - **SC-003**: With-replica: replica healthy and in recovery.
 - **SC-004**: App env points datasource at primary for both packs.
 - **SC-005**: Spec Kit / OpenSpec names match as-built service, container, and port identifiers.
+- **SC-006** (Phase 4 D0): `contracts/schema-contract.md` v1.0 exists and documents default fleet tables.
+- **SC-007** (Phase 4 T0): Primary is documented as Haystack fleet pull source on `heavy-rental-network`.
 
 ## Assumptions
 

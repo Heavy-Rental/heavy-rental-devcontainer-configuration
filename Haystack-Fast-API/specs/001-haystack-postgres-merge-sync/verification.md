@@ -572,6 +572,41 @@ SYNC_MODE: mirror
 
 ---
 
+## 10b. Phase 4 — Allowlist (SC-010) and lag metrics (SC-011)
+
+### Allowlist (default)
+
+1. Confirm Compose / env: `SYNC_TABLE_ALLOWLIST=asset,booking,category`.
+2. On primary, create a non-allowlisted public table with a PK and a row (e.g. `zz_not_fleet`).
+3. Wait for a successful sync cycle.
+4. **Expect:** logs include `SKIP table public.zz_not_fleet: not in SYNC_TABLE_ALLOWLIST` (or table absent from FDW import); local DB does not need that table.
+5. **Expect:** allowlisted tables present on primary still merge when mergeable.
+
+### Full public merge override
+
+```yaml
+SYNC_TABLE_ALLOWLIST: "all"
+```
+
+Recreate sync service; **expect** startup log `allowlist_mode=all` and non-fleet tables eligible again.
+
+### Lag metrics
+
+```bash
+docker logs postgres-haystack-sync 2>&1 | grep -E 'METRICS cycle|duration_ms'
+```
+
+**Expect:** lines with `duration_ms=...`, `interval_seconds=60` (or override), `expected_max_lag_seconds=...`.
+
+### D0 contract (SC-012)
+
+Confirm files exist:
+
+- `specs/001-haystack-postgres-merge-sync/contracts/schema-contract.md`
+- peer producer: `Heavy-Rental-REST-API/specs/001-rest-api-devcontainer/contracts/schema-contract.md`
+
+---
+
 ## 11. Pass / fail checklist
 
 | ID | Check | Result |
@@ -587,8 +622,11 @@ SYNC_MODE: mirror
 | EV | Additive schema evolution | ☐ Pass / ☐ Fail / ☐ Skipped |
 | OPT | Defaults keep drop/index/type off | ☐ Pass / ☐ Fail |
 | OPT | Opt-in drop / index / widen (as needed) | ☐ Pass / ☐ Fail / ☐ Skipped |
+| SC-010 | Default allowlist only merges fleet tables; non-allowlisted skipped | ☐ Pass / ☐ Fail / ☐ Skipped |
+| SC-011 | Logs include `METRICS cycle` with `duration_ms` | ☐ Pass / ☐ Fail |
+| SC-012 | D0 `contracts/schema-contract.md` v1.0 present | ☐ Pass / ☐ Fail |
 
-**Feature verification pass:** SC-001, SC-002, SC-003, SC-005, SC-006 pass; SC-004 when data allows; SC-007 recommended; UK + EV when testing the extended merge behavior; defaults remain sandbox-safe.
+**Feature verification pass:** SC-001, SC-002, SC-003, SC-005, SC-006 pass; SC-004 when data allows; SC-007 recommended; UK + EV when testing the extended merge behavior; SC-010–SC-012 for Phase 4; defaults remain sandbox-safe.
 
 ---
 
@@ -599,7 +637,9 @@ SYNC_MODE: mirror
 | Cannot resolve `postgres-primary` | REST API stack up? Both on `heavy-rental-network`? |
 | `postgres-haystack-sync` already exited | Halt mode enabled or crash — check logs; with defaults expect skip not exit. Recreate: `docker compose up -d --force-recreate postgres-haystack-sync` |
 | Auth failures | `postgres` / `postgres` on both stacks |
-| Tables skipped | Source needs a **primary key** or **unique** key (if `ALLOW_UNIQUE_MERGE_KEY=true`) |
+| Tables skipped | Source needs a **primary key** or **unique** key (if `ALLOW_UNIQUE_MERGE_KEY=true`); or table not in `SYNC_TABLE_ALLOWLIST` |
+| Expected table not merging | Physical name match allowlist? Override `SYNC_TABLE_ALLOWLIST` if Spring uses different names |
+| No `METRICS` lines | Rebuild/recreate `postgres-haystack-sync` after Phase 4 script update |
 | New column missing locally | `SCHEMA_EVOLUTION=true`? Recreate `postgres-haystack-sync` after primary ALTER |
 | App still on wrong host | `DATABASE_URL` → `postgres-haystack`, not `postgres-primary` |
 | Empty merge | Primary `public` has no tables yet — SC-002 path still valid if logs show success |

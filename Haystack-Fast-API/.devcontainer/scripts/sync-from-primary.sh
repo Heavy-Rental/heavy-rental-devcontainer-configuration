@@ -21,6 +21,8 @@
 #   SYNC_UNIQUE_INDEXES=false      # also create unique secondary indexes
 #   SAFE_TYPE_WIDENINGS=false      # apply whitelisted type widenings only
 #   SYNC_FOREIGN_KEYS=false        # reserved / not implemented (NOT VALID FKs) — logged if true
+#   SYNC_TABLE_ALLOWLIST=asset,booking,category
+#       # comma-separated public relation names (Phase 4 T2 / D0). Use "all" or "*" for full public merge.
 set -euo pipefail
 
 SOURCE_HOST="${SOURCE_HOST:-postgres-primary}"
@@ -49,8 +51,64 @@ SYNC_INDEXES="${SYNC_INDEXES:-false}"
 SYNC_UNIQUE_INDEXES="${SYNC_UNIQUE_INDEXES:-false}"
 SAFE_TYPE_WIDENINGS="${SAFE_TYPE_WIDENINGS:-false}"
 SYNC_FOREIGN_KEYS="${SYNC_FOREIGN_KEYS:-false}"
+# Phase 4 T2: deterministic fleet table set (D0 schema-contract.md). "all"/"*" = every public table.
+SYNC_TABLE_ALLOWLIST="${SYNC_TABLE_ALLOWLIST:-asset,booking,category}"
 
 FDW_SERVER_NAME="${FDW_SERVER_NAME:-haystack_primary_src}"
+
+# Allowlist mode: "all" when SYNC_TABLE_ALLOWLIST is all/*; else "list" with ALLOWLIST_TABLES array.
+ALLOWLIST_MODE="list"
+ALLOWLIST_TABLES=()
+CANDIDATE_TABLES=()
+SKIPPED_NOT_ALLOWLISTED=0
+MERGED_COUNT=0
+SKIPPED_NO_KEY=0
+
+parse_table_allowlist() {
+  local raw trimmed
+  raw="${SYNC_TABLE_ALLOWLIST// /}"
+  trimmed="${raw,,}"
+  ALLOWLIST_TABLES=()
+  if [[ -z "$raw" || "$trimmed" == "all" || "$raw" == "*" ]]; then
+    ALLOWLIST_MODE="all"
+    log "SYNC_TABLE_ALLOWLIST mode=all (merge every public table with a merge key)"
+    return 0
+  fi
+  ALLOWLIST_MODE="list"
+  IFS=',' read -ra ALLOWLIST_TABLES <<< "$raw"
+  # Drop empty entries
+  local cleaned=()
+  local t
+  for t in "${ALLOWLIST_TABLES[@]}"; do
+    t=$(echo "$t" | tr -d '[:space:]')
+    [[ -n "$t" ]] && cleaned+=("$t")
+  done
+  ALLOWLIST_TABLES=("${cleaned[@]}")
+  if ((${#ALLOWLIST_TABLES[@]} == 0)); then
+    log "WARN: SYNC_TABLE_ALLOWLIST empty after parse; treating as mode=all"
+    ALLOWLIST_MODE="all"
+    return 0
+  fi
+  log "SYNC_TABLE_ALLOWLIST mode=list tables=${ALLOWLIST_TABLES[*]}"
+}
+
+table_in_allowlist() {
+  local table="$1" t
+  if [[ "$ALLOWLIST_MODE" == "all" ]]; then
+    return 0
+  fi
+  for t in "${ALLOWLIST_TABLES[@]}"; do
+    if [[ "$t" == "$table" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Epoch milliseconds (GNU date; postgres:17 image)
+now_ms() {
+  date +%s%3N 2>/dev/null || echo $(($(date +%s) * 1000))
+}
 
 # When SYNC_MODE=mirror, turn on sandbox-breaking parity flags unless already set by env.
 # (Values already true/false from env above; mirror forces opt-ins on.)
@@ -188,12 +246,36 @@ END
 SQL
 }
 
+# Build LIMIT TO clause for FDW when allowlist is finite.
+fdw_limit_to_clause() {
+  if [[ "$ALLOWLIST_MODE" != "list" ]] || ((${#ALLOWLIST_TABLES[@]} == 0)); then
+    echo ""
+    return 0
+  fi
+  local parts=() t qt
+  for t in "${ALLOWLIST_TABLES[@]}"; do
+    qt=$(quote_ident "$t")
+    parts+=("${qt}")
+  done
+  local joined
+  joined=$(IFS=', '; echo "${parts[*]}")
+  echo "LIMIT TO (${joined})"
+}
+
 refresh_staging() {
   log "Refreshing staging schema ${STAGING_SCHEMA}"
+  local limit_clause
+  limit_clause=$(fdw_limit_to_clause)
+  if [[ -n "$limit_clause" ]]; then
+    log "FDW IMPORT FOREIGN SCHEMA public ${limit_clause}"
+  else
+    log "FDW IMPORT FOREIGN SCHEMA public (all tables)"
+  fi
   target_psql <<SQL
 DROP SCHEMA IF EXISTS $(quote_ident "$STAGING_SCHEMA") CASCADE;
 CREATE SCHEMA $(quote_ident "$STAGING_SCHEMA");
 IMPORT FOREIGN SCHEMA public
+  ${limit_clause}
   FROM SERVER ${FDW_SERVER_NAME}
   INTO $(quote_ident "$STAGING_SCHEMA");
 SQL
@@ -202,6 +284,25 @@ SQL
 list_source_tables() {
   source_psql -t -A -c \
     "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;"
+}
+
+# Fill global CANDIDATE_TABLES array from source public tables + allowlist (Phase 4 T2).
+# Must run in the main shell (not process substitution) so SKIPPED_NOT_ALLOWLISTED is visible.
+filter_merge_candidates() {
+  local all_tables t
+  CANDIDATE_TABLES=()
+  SKIPPED_NOT_ALLOWLISTED=0
+  mapfile -t all_tables < <(list_source_tables | sed '/^$/d')
+  for t in "${all_tables[@]}"; do
+    t=$(echo "$t" | tr -d '[:space:]')
+    [[ -z "$t" ]] && continue
+    if table_in_allowlist "$t"; then
+      CANDIDATE_TABLES+=("$t")
+    else
+      SKIPPED_NOT_ALLOWLISTED=$((SKIPPED_NOT_ALLOWLISTED + 1))
+      log "SKIP table public.${t}: not in SYNC_TABLE_ALLOWLIST"
+    fi
+  done
 }
 
 # Sets globals: MERGE_KEY_KIND (pk|unique|), MERGE_KEY_COLS (csv)
@@ -611,6 +712,7 @@ merge_one_table() {
   get_merge_key "$table"
   if [[ -z "$MERGE_KEY_COLS" || -z "$MERGE_KEY_KIND" ]]; then
     log "SKIP table public.${table}: no primary key or usable unique key on source"
+    SKIPPED_NO_KEY=$((SKIPPED_NO_KEY + 1))
     return 0
   fi
 
@@ -619,6 +721,7 @@ merge_one_table() {
 
   if ! ensure_local_merge_key "$table" "$MERGE_KEY_KIND" "$MERGE_KEY_COLS"; then
     log "SKIP table public.${table}: could not ensure local merge key (${MERGE_KEY_KIND}:${MERGE_KEY_COLS})"
+    SKIPPED_NO_KEY=$((SKIPPED_NO_KEY + 1))
     return 0
   fi
 
@@ -626,6 +729,7 @@ merge_one_table() {
   cols_csv=$(intersect_columns "$table")
   if [[ -z "$cols_csv" ]]; then
     log "SKIP table public.${table}: no common columns after evolution"
+    SKIPPED_NO_KEY=$((SKIPPED_NO_KEY + 1))
     return 0
   fi
 
@@ -636,6 +740,7 @@ merge_one_table() {
     [[ -z "$k" ]] && continue
     if [[ ",${cols_csv}," != *",${k},"* ]]; then
       log "SKIP table public.${table}: merge key column ${k} missing locally"
+      SKIPPED_NO_KEY=$((SKIPPED_NO_KEY + 1))
       return 0
     fi
   done
@@ -692,26 +797,31 @@ ON CONFLICT (${key_list}) DO UPDATE SET ${update_set};"
   fi
 
   sync_table_indexes "$table"
+  MERGED_COUNT=$((MERGED_COUNT + 1))
   return 0
 }
 
 run_merge() {
-  local tables table failed=0
+  local table failed=0
+  MERGED_COUNT=0
+  SKIPPED_NO_KEY=0
   setup_fdw
   refresh_staging
 
-  mapfile -t tables < <(list_source_tables | sed '/^$/d')
-  if ((${#tables[@]} == 0)); then
-    log "No public tables on source; merge cycle complete (0 tables)"
+  filter_merge_candidates
+  if ((${#CANDIDATE_TABLES[@]} == 0)); then
+    log "No allowlisted public tables on source; merge cycle complete (0 tables) skipped_not_allowlisted=${SKIPPED_NOT_ALLOWLISTED}"
+    log "METRICS merge tables_candidates=0 merged=0 skipped_no_key=0 skipped_not_allowlisted=${SKIPPED_NOT_ALLOWLISTED} failed=0 allowlist_mode=${ALLOWLIST_MODE}"
     return 0
   fi
 
-  for table in "${tables[@]}"; do
+  for table in "${CANDIDATE_TABLES[@]}"; do
     table=$(echo "$table" | tr -d '[:space:]')
     [[ -z "$table" ]] && continue
     if ! merge_one_table "$table"; then
       failed=$((failed + 1))
       log "ERROR merging public.${table}; aborting remaining tables this cycle"
+      log "METRICS merge tables_candidates=${#CANDIDATE_TABLES[@]} merged=${MERGED_COUNT} skipped_no_key=${SKIPPED_NO_KEY} skipped_not_allowlisted=${SKIPPED_NOT_ALLOWLISTED} failed=${failed} allowlist_mode=${ALLOWLIST_MODE}"
       return 1
     fi
   done
@@ -720,36 +830,51 @@ run_merge() {
     log "WARN: SYNC_FOREIGN_KEYS=true is not implemented yet (planned: NOT VALID FKs); skipping FK sync"
   fi
 
-  log "Merge cycle summary: tables=${#tables[@]} failed=${failed} mode=${SYNC_MODE} schema_evolution=${SCHEMA_EVOLUTION} unique_merge_key=${ALLOW_UNIQUE_MERGE_KEY} drop_orphan=${DROP_ORPHAN_COLUMNS} indexes=${SYNC_INDEXES}/${SYNC_UNIQUE_INDEXES} type_widen=${SAFE_TYPE_WIDENINGS}"
+  log "Merge cycle summary: tables_candidates=${#CANDIDATE_TABLES[@]} merged=${MERGED_COUNT} skipped_no_key=${SKIPPED_NO_KEY} skipped_not_allowlisted=${SKIPPED_NOT_ALLOWLISTED} failed=${failed} mode=${SYNC_MODE} schema_evolution=${SCHEMA_EVOLUTION} unique_merge_key=${ALLOW_UNIQUE_MERGE_KEY} drop_orphan=${DROP_ORPHAN_COLUMNS} indexes=${SYNC_INDEXES}/${SYNC_UNIQUE_INDEXES} type_widen=${SAFE_TYPE_WIDENINGS}"
+  log "METRICS merge tables_candidates=${#CANDIDATE_TABLES[@]} merged=${MERGED_COUNT} skipped_no_key=${SKIPPED_NO_KEY} skipped_not_allowlisted=${SKIPPED_NOT_ALLOWLISTED} failed=${failed} allowlist_mode=${ALLOWLIST_MODE}"
   return 0
 }
 
 attempt_cycle() {
-  log "=== Sync cycle start (source=${SOURCE_HOST} target=${TARGET_HOST}) ==="
+  local cycle_start_ms cycle_end_ms duration_ms status
+  cycle_start_ms=$(now_ms)
+  log "=== Sync cycle start (source=${SOURCE_HOST} target=${TARGET_HOST} interval_seconds=${SYNC_INTERVAL_SECONDS} expected_max_lag_seconds≈${SYNC_INTERVAL_SECONDS}) ==="
 
   if ! source_available; then
     if is_truthy "$HALT_ON_PRIMARY_UNAVAILABLE"; then
+      cycle_end_ms=$(now_ms)
+      duration_ms=$((cycle_end_ms - cycle_start_ms))
       log "HALT: cannot detect connection to ${SOURCE_HOST}:${SOURCE_PORT} (db=${SOURCE_DB}) after ${PRIMARY_CHECK_RETRIES} retries"
       log "Local application tables were not modified. Exiting sync job."
+      log "METRICS cycle status=halted duration_ms=${duration_ms} interval_seconds=${SYNC_INTERVAL_SECONDS} expected_max_lag_seconds=${SYNC_INTERVAL_SECONDS}"
       exit 0
     fi
+    cycle_end_ms=$(now_ms)
+    duration_ms=$((cycle_end_ms - cycle_start_ms))
     log "SKIP: primary unavailable; will retry after ${SYNC_INTERVAL_SECONDS}s"
-    log "=== Sync cycle end (skipped) ==="
+    log "METRICS cycle status=skipped duration_ms=${duration_ms} interval_seconds=${SYNC_INTERVAL_SECONDS} expected_max_lag_seconds=${SYNC_INTERVAL_SECONDS}"
+    log "=== Sync cycle end (skipped) duration_ms=${duration_ms} ==="
     return 0
   fi
 
   log "Source ${SOURCE_HOST} is reachable; starting merge"
   if run_merge; then
-    log "=== Sync cycle end (success) ==="
+    status="success"
   else
-    log "=== Sync cycle end (failed) ==="
+    status="failed"
   fi
+  cycle_end_ms=$(now_ms)
+  duration_ms=$((cycle_end_ms - cycle_start_ms))
+  # Poll-based lag note (not CDC): row visibility lag is bounded by interval + cycle duration.
+  log "METRICS cycle status=${status} duration_ms=${duration_ms} interval_seconds=${SYNC_INTERVAL_SECONDS} expected_max_lag_seconds=${SYNC_INTERVAL_SECONDS} lag_note=poll_not_cdc"
+  log "=== Sync cycle end (${status}) duration_ms=${duration_ms} ==="
 }
 
 main() {
   apply_sync_mode
+  parse_table_allowlist
   log "Haystack merge-sync starting"
-  log "Config: mode=${SYNC_MODE} schemas=${SOURCE_SCHEMAS} interval=${SYNC_INTERVAL_SECONDS}s halt=${HALT_ON_PRIMARY_UNAVAILABLE} evolution=${SCHEMA_EVOLUTION} unique_key=${ALLOW_UNIQUE_MERGE_KEY} drop_orphan=${DROP_ORPHAN_COLUMNS} indexes=${SYNC_INDEXES}/${SYNC_UNIQUE_INDEXES} type_widen=${SAFE_TYPE_WIDENINGS} fks=${SYNC_FOREIGN_KEYS}"
+  log "Config: mode=${SYNC_MODE} schemas=${SOURCE_SCHEMAS} interval=${SYNC_INTERVAL_SECONDS}s halt=${HALT_ON_PRIMARY_UNAVAILABLE} evolution=${SCHEMA_EVOLUTION} unique_key=${ALLOW_UNIQUE_MERGE_KEY} drop_orphan=${DROP_ORPHAN_COLUMNS} indexes=${SYNC_INDEXES}/${SYNC_UNIQUE_INDEXES} type_widen=${SAFE_TYPE_WIDENINGS} fks=${SYNC_FOREIGN_KEYS} allowlist_mode=${ALLOWLIST_MODE} allowlist=${SYNC_TABLE_ALLOWLIST}"
   if [[ "$SOURCE_SCHEMAS" != "public" ]]; then
     log "WARN: SOURCE_SCHEMAS=${SOURCE_SCHEMAS} — only public is supported in this version; non-public schemas ignored"
   fi

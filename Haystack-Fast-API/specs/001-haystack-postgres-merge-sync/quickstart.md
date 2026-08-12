@@ -27,6 +27,8 @@ That document is the source of truth for runtime verification. This page is a sh
 | Local PG | `postgres-haystack` healthy; host port **5434** |
 | Sync | `postgres-haystack-sync` running (`unless-stopped`); logs show merge or skip |
 | Near-RT default | `SYNC_INTERVAL_SECONDS=60`, `HALT_ON_PRIMARY_UNAVAILABLE=false` |
+| Fleet allowlist (T2) | `SYNC_TABLE_ALLOWLIST=asset,booking,category` (use `all` for full public) |
+| Lag metrics (T1) | Logs include `METRICS cycle` with `duration_ms` |
 | Halt path (optional) | Set halt `true` + recreate sync → job exits when primary down; local PG still R/W |
 | Staging schema | After merge, `primary_snapshot` may exist (FDW staging; expected) |
 
@@ -69,5 +71,7 @@ Then continue with **[verification.md](./verification.md)** for SC-001–SC-007.
 - Running verification: [verification.md](./verification.md)  
 - Plan: [plan.md](./plan.md)  
 - Env contract: [contracts/db-sync-env.md](./contracts/db-sync-env.md)  
+- D0 schema contract: [contracts/schema-contract.md](./contracts/schema-contract.md)  
 - OpenSpec SoT: `openspec/specs/haystack-devcontainer/spec.md`  
 - OpenSpec archive: `openspec/changes/archive/2026-08-08-add-haystack-postgres-merge-sync/`  
+- Phase 4 archive: `openspec/changes/archive/2026-08-12-phase4-fleet-mirror-allowlist-d0/`

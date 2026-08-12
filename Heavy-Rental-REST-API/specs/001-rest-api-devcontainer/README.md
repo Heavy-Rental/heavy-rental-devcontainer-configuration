@@ -16,9 +16,12 @@ Spring Boot Java REST API devcontainer packs under `Heavy-Rental-REST-API/`, wit
 | [data-model.md](./data-model.md) | Services, volumes, ports |
 | [contracts/compose-env.md](./contracts/compose-env.md) | Env and port contract |
 | [contracts/pack-layout.md](./contracts/pack-layout.md) | Folder layout and promote rule |
+| [contracts/schema-contract.md](./contracts/schema-contract.md) | **D0** fleet domain schema (producer) for Haystack mirror |
 | [quickstart.md](./quickstart.md) | Short promote + open steps |
 | [verification.md](./verification.md) | Runtime checks |
 | [tasks.md](./tasks.md) | Task list |
+
+**Phase 4:** Primary is the fleet LTM **pull source** for Haystack-Fast-API merge-sync. See schema contract and operator README.
 
 **Packs (as-built):**
 

@@ -56,6 +56,19 @@ grep -q 'db-replica-one' Heavy-Rental-REST-API/.devcontainer/docker-compose.yml 
 grep -q 'db-replica-one' Heavy-Rental-REST-API/.devcontainer/devcontainer.json && echo replica-profile-present || echo primary-only-profiles
 ```
 
+## 6. Phase 4 — Fleet source + D0 (SC-006 / SC-007)
+
+```bash
+# Primary on shared network (T0) — container name used by Haystack SOURCE_HOST
+docker inspect postgres-primary --format '{{json .NetworkSettings.Networks}}' | grep -q heavy-rental-network && echo T0-ok
+
+# D0 contract present
+test -f Heavy-Rental-REST-API/specs/001-rest-api-devcontainer/contracts/schema-contract.md && echo D0-ok
+```
+
+Cross-stack merge behavior is verified in Haystack Spec Kit:  
+`Haystack-Fast-API/specs/001-haystack-postgres-merge-sync/verification.md` (SC-010–SC-012).
+
 ## Pass checklist
 
 | ID | Check | Result |
@@ -65,6 +78,8 @@ grep -q 'db-replica-one' Heavy-Rental-REST-API/.devcontainer/devcontainer.json &
 | SC-003 | Replica in recovery (with pack) | ☐ / N/A |
 | SC-004 | `SPRING_DATASOURCE_URL` → primary | ☐ |
 | SC-005 | Names match data-model | ☐ |
+| SC-006 | D0 schema-contract.md present | ☐ |
+| SC-007 | Primary on heavy-rental-network (Haystack source) | ☐ |
 
 ## Troubleshooting
 
