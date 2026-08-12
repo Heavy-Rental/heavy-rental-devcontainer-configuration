@@ -23,6 +23,7 @@ This feature does not introduce a new application domain model. It manages **dat
 | Attribute | Description |
 |---|---|
 | Identity | Compose service `postgres-haystack`, container name `postgres-haystack` |
+| Image | `pgvector/pgvector:pg17` (Postgres 17 + pgvector; Phase 5 T5/D4 — see `004`) |
 | Engine | PostgreSQL 17 |
 | Database name | `heavy_rental` |
 | Volume | `postgres-haystack-data` (persistent across container recreate) |

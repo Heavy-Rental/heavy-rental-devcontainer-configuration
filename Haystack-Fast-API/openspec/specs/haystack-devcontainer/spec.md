@@ -10,6 +10,8 @@ The stack includes a **writable local PostgreSQL** database and a **merge-sync**
 
 **Neo4j:** local Community 5 instance for Haystack DocumentStore (`neo4j-haystack`), complementary to Postgres. Devcontainer installs the **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) for Cypher/Bolt in the IDE (Browser remains on port 7474). IDE connections are UI-managed (not a `pgsql.connections`-style settings array).
 
+**Pgvector (Phase 5 T5 / D4):** local Postgres uses image **`pgvector/pgvector:pg17`** with extension **`vector`** on `heavy_rental` (initdb + healthcheck ensure). App env documents **`INDEXING_EMBEDDING_DIM=768`** for future DocumentStore cutover. **I0/I1** (factory + pipeline writer) remain application work — not required for this platform requirement.
+
 **FAISS:** not part of the default stack (env and postCreate install removed). Spec Kit `003` retained as historical only.
 
 Change history:
@@ -21,8 +23,9 @@ Change history:
 - 2026-08-10: Feasibility_Study §11 **T1** — near-RT default `SYNC_INTERVAL_SECONDS=60`, skip-by-default when primary down, `restart: unless-stopped`; service names `postgres-haystack` / `postgres-haystack-sync`
 - 2026-08-10: **FAISS removed** from compose env and `postCreateCommand` (no longer SoT)
 - 2026-08-12: Phase 4 / S4 — `SYNC_TABLE_ALLOWLIST` (T2), cycle lag `METRICS` (T1), D0 schema-contract.md; archive `2026-08-12-phase4-fleet-mirror-allowlist-d0`
+- 2026-08-12: Phase 5 Step 5.1 — T5 / D4 pgvector platform ready; archive `2026-08-12-phase5-t5-d4-pgvector-platform`
 
-Spec Kit (active): `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`. Historical: `specs/003-haystack-faiss/`.
+Spec Kit (active): `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`, `specs/004-haystack-pgvector/`. Historical: `specs/003-haystack-faiss/`.
 
 ## Requirements
 
@@ -91,7 +94,7 @@ The devcontainer MAY set only the extension’s supported settings keys (e.g. `n
 
 ### Requirement: Local writable database
 
-The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fully writable and persists data in a dedicated Docker volume. The Haystack application service MUST use this local database as its default **relational** read/write data source (Haystack document/vector storage MAY use Neo4j).
+The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fully writable and persists data in a dedicated Docker volume. The Haystack application service MUST use this local database as its default **relational** read/write data source. Graph DocumentStore MAY use Neo4j. Durable project-chunk vectors target **pgvector on this same local Postgres** (platform ready; app I0/I1 cutover separate).
 
 #### Scenario: Local database accepts writes
 
@@ -105,6 +108,30 @@ The Haystack Compose stack MUST provide a local PostgreSQL 17 service that is fu
 - **GIVEN** the `haystack-fast-api` service is configured via environment
 - **WHEN** the application opens its default database connection
 - **THEN** it connects to the local Compose database service (not `postgres-primary`)
+
+### Requirement: Pgvector platform on local Postgres (Phase 5 T5 / D4)
+
+The local Postgres service (`postgres-haystack`) MUST use a PostgreSQL 17 image that includes **pgvector** (default: `pgvector/pgvector:pg17`). Database `heavy_rental` MUST have extension **`vector`** available when the service is healthy (bootstrap via initdb for fresh volumes; idempotent ensure for upgraded volumes). The application service MUST expose **`INDEXING_EMBEDDING_DIM`** (default **768**) as the platform embedding-dimension contract for a future `PgvectorDocumentStore` cutover.
+
+This requirement is **platform-only**: the stack MUST NOT require application DocumentStore factory wiring (`INDEXING_DOCUMENT_STORE`), indexing pipeline writers, document tables, or tenant isolation tests (I0/I1 and later). REST API `postgres-primary` MUST NOT be required to install pgvector.
+
+#### Scenario: Vector extension present
+
+- **GIVEN** `postgres-haystack` is healthy
+- **WHEN** an operator queries `pg_extension` for `vector` on `heavy_rental`
+- **THEN** the extension is present
+
+#### Scenario: Embedding dim contract on app env
+
+- **GIVEN** the `haystack-fast-api` service is running
+- **WHEN** environment variables are read
+- **THEN** `INDEXING_EMBEDDING_DIM` is set (default `768`)
+
+#### Scenario: Platform does not force DocumentStore cutover
+
+- **GIVEN** only this platform requirement is satisfied
+- **WHEN** an operator inspects Compose
+- **THEN** no app-owned document vector tables are required to exist yet
 
 ### Requirement: Shared network reachability to REST API primary
 

@@ -23,7 +23,7 @@ No physical streaming replica. Local-only rows retained under default merge mode
 
 **Language/Version**: Bash (`sync-from-primary.sh`); SQL (FDW, dynamic upserts); Docker Compose YAML
 
-**Primary Dependencies**: Docker Compose v2; `postgres:17`; `pg_isready`, `psql`; `postgres_fdw` on local DB
+**Primary Dependencies**: Docker Compose v2; local DB image **`pgvector/pgvector:pg17`** (Postgres 17 + pgvector; see `004`); sync client `postgres:17`; `pg_isready`, `psql`; `postgres_fdw` on local DB
 
 **Storage**: Docker volume `postgres-haystack-data`
 

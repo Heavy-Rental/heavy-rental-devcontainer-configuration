@@ -10,3 +10,5 @@
 - [x] T008 Phase 4 docs: primary as Haystack fleet pull source (T0); no sync job on REST
 - [x] T009 OpenSpec archive `2026-08-12-phase4-d0-schema-contract-fleet-source`
 - [ ] T010 Operator confirm SC-006/SC-007 (schema contract present; network T0)
+- [x] T011 Phase 5 peer docs: Haystack pgvector platform; primary does not require vector
+- [x] T012 OpenSpec archive `2026-08-12-phase5-peer-pgvector-platform-note`

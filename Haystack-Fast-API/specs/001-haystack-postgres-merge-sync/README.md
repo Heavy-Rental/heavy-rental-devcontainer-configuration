@@ -33,3 +33,5 @@ GitHub [Spec Kit](https://github.com/github/spec-kit)–style feature package fo
 | [openspec/changes/archive/2026-08-12-phase4-fleet-mirror-allowlist-d0/](../../openspec/changes/archive/2026-08-12-phase4-fleet-mirror-allowlist-d0/) | Phase 4 allowlist + lag metrics + D0 |
 
 Later enhancements (unique-key merge, additive evolution, opt-in parity flags, Phase 4 allowlist/D0) are reflected in the OpenSpec SoT and this Spec Kit package.
+
+**Related (Phase 5 T5 / D4):** local DB image is now **`pgvector/pgvector:pg17`** with extension `vector` — see [`../004-haystack-pgvector/`](../004-haystack-pgvector/). Merge-sync behavior is unchanged; sync client image remains `postgres:17`.

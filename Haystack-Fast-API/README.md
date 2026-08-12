@@ -5,11 +5,11 @@ This folder ships a **single Compose-based devcontainer** for **Haystack Fast AP
 | Service | Container | Role |
 |---------|-----------|------|
 | App | `haystack-fast-api` | Dev workspace for the Haystack Fast API project |
-| Local Postgres | `postgres-haystack` | Writable relational DB for Haystack (`heavy_rental`) |
+| Local Postgres | `postgres-haystack` | Writable relational DB + **pgvector** (`heavy_rental`; image `pgvector/pgvector:pg17`) |
 | Fleet merge-sync | `postgres-haystack-sync` | Near-RT **pull** from REST API `postgres-primary` (~60s poll) |
 | Neo4j | `neo4j-haystack` | Graph store for Haystack DocumentStore (neo4j-haystack) |
 
-**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-haystack-postgres-merge-sync/`](./specs/001-haystack-postgres-merge-sync/) · [`specs/002-haystack-neo4j/`](./specs/002-haystack-neo4j/)  
+**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-haystack-postgres-merge-sync/`](./specs/001-haystack-postgres-merge-sync/) · [`specs/002-haystack-neo4j/`](./specs/002-haystack-neo4j/) · [`specs/004-haystack-pgvector/`](./specs/004-haystack-pgvector/)  
 **Historical only (not in default stack):** [`specs/003-haystack-faiss/`](./specs/003-haystack-faiss/)
 
 ---
@@ -22,16 +22,18 @@ One stack: app + local Postgres + merge-sync job + Neo4j. The app always uses th
 |---|----------------------------|
 | Compose services | `haystack-fast-api`, `postgres-haystack`, `postgres-haystack-sync`, `neo4j` |
 | App container | `haystack-fast-api` |
-| Local Postgres | `postgres-haystack` — host port **5434** → container `5432` |
+| Local Postgres | `postgres-haystack` — **pgvector/pgvector:pg17**, host port **5434** → container `5432` |
+| pgvector | Extension **`vector`** on `heavy_rental` (Phase 5 T5 / D4 platform ready) |
 | Sync job | `postgres-haystack-sync` — source `postgres-primary`, target `postgres-haystack` |
 | Neo4j | `neo4j-haystack` — Browser **7474**, Bolt **7687** |
 | App Postgres URL | `postgresql://postgres:postgres@postgres-haystack:5432/heavy_rental` |
+| App embedding dim | `INDEXING_EMBEDDING_DIM=768` (contract for future I0/I1 PgvectorDocumentStore) |
 | App Neo4j env | `NEO4J_URI=bolt://neo4j:7687`, user `neo4j`, password `heavyrental` |
 | Default sync interval | **60s** poll (`SYNC_INTERVAL_SECONDS`; not CDC) |
 | Default table allowlist | `asset,booking,category` (`SYNC_TABLE_ALLOWLIST`; use `all` for full public) |
 | VS Code Postgres profiles | **Haystack Local (R/W)** + **REST API Primary (source)** |
 | Neo4j IDE | **Neo4j for VS Code** (UI-managed connection; not `pgsql.connections`-style) |
-| Best for | Haystack app work with a sandbox Postgres mirror of fleet data + local Neo4j |
+| Best for | Haystack app work with a sandbox Postgres mirror of fleet data + pgvector platform + local Neo4j |
 | Peer dependency | REST API stack optional for merge; primary must be up for successful fleet pull |
 
 ### Architecture sketch
@@ -41,11 +43,13 @@ Heavy-Rental-REST-API (peer)              Haystack-Fast-API (this pack)
 ────────────────────────────              ────────────────────────────
 postgres-primary (OLTP SoT)  ◄──pull──   postgres-haystack-sync
    heavy_rental / public                    (~60s, allowlist)
-                                              │
+   (no pgvector required)                     │
                                               ▼
 app (Spring) ──R/W──► postgres-primary   postgres-haystack (local R/W)
+                                         + pgvector (extension vector)
                                               ▲
 haystack-fast-api ──DATABASE_URL──────────────┘
+haystack-fast-api ──INDEXING_EMBEDDING_DIM──── (768; future I1)
 haystack-fast-api ──NEO4J_*──► neo4j-haystack
 
 host localhost:5434 = postgres-haystack
@@ -59,11 +63,13 @@ host localhost:7687 = Neo4j Bolt
 
 - App image build from `.devcontainer/Dockerfile` (workspace mount at `/workspaces/haystack-fast-api`)
 - External Docker network: **`heavy-rental-network`**
-- Postgres 17 local DB name / user / password (dev): `heavy_rental` / `postgres` / `postgres`
+- Postgres 17 + **pgvector** local DB (`pgvector/pgvector:pg17`); name / user / password (dev): `heavy_rental` / `postgres` / `postgres`
+- `vector` extension bootstrap (initdb + healthcheck ensure); dim contract `INDEXING_EMBEDDING_DIM=768`
 - Forwarded ports: **5434** (Postgres), **7474** / **7687** (Neo4j)
 - Extensions: Postgres client (`ms-ossdata.vscode-pgsql`), Neo4j for VS Code (`neo4j-extensions.neo4j-for-vscode`)
 - Non-root user `vscode`; `postCreateCommand` fixes workspace ownership and installs `uv` + `neo4j-haystack` (best-effort)
 - FAISS is **not** wired in the default Compose / postCreate path
+- DocumentStore factory / indexing → Pgvector writer (**I0/I1**) are **application** work, not this pack
 
 ---
 
@@ -131,6 +137,12 @@ docker exec postgres-haystack \
   psql -U postgres -d heavy_rental -c "SELECT pg_is_in_recovery();"
 # Expect: f (false)
 
+# pgvector extension (Phase 5 T5 / D4)
+docker exec postgres-haystack \
+  psql -U postgres -d heavy_rental -c \
+  "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
+# Expect: vector | <version>
+
 # Merge-sync job (running loop; merge or skip when primary missing)
 docker logs postgres-haystack-sync 2>&1 | tail -50
 # Expect: cycle logs; METRICS cycle ... duration_ms=... ; allowlist mode on start
@@ -142,6 +154,8 @@ docker exec neo4j-haystack cypher-shell -u neo4j -p heavyrental 'RETURN 1;'
 # App env (inside app container)
 docker exec haystack-fast-api printenv DATABASE_URL
 # Expect: ...@postgres-haystack:5432/heavy_rental
+docker exec haystack-fast-api printenv INDEXING_EMBEDDING_DIM
+# Expect: 768
 docker exec haystack-fast-api printenv | grep NEO4J
 ```
 
@@ -149,6 +163,7 @@ Full runbooks:
 
 - Postgres merge: [`specs/001-haystack-postgres-merge-sync/verification.md`](./specs/001-haystack-postgres-merge-sync/verification.md) · quickstart: [`specs/001-haystack-postgres-merge-sync/quickstart.md`](./specs/001-haystack-postgres-merge-sync/quickstart.md)
 - Neo4j: [`specs/002-haystack-neo4j/verification.md`](./specs/002-haystack-neo4j/verification.md) · quickstart: [`specs/002-haystack-neo4j/quickstart.md`](./specs/002-haystack-neo4j/quickstart.md)
+- pgvector platform: [`specs/004-haystack-pgvector/verification.md`](./specs/004-haystack-pgvector/verification.md) · quickstart: [`specs/004-haystack-pgvector/quickstart.md`](./specs/004-haystack-pgvector/quickstart.md)
 
 ---
 
@@ -170,6 +185,29 @@ postgres-primary (heavy_rental)  ◄──  postgres-haystack-sync (poll ~60s)
 | D0 schema inventory (producer) | [../Heavy-Rental-REST-API/specs/001-rest-api-devcontainer/contracts/schema-contract.md](../Heavy-Rental-REST-API/specs/001-rest-api-devcontainer/contracts/schema-contract.md) |
 
 Default allowlist tables: **`asset`**, **`booking`**, **`category`**. Override with `SYNC_TABLE_ALLOWLIST` in Compose (e.g. `all` for full `public` merge).
+
+---
+
+## Pgvector platform (Phase 5 T5 / D4)
+
+Local Postgres is **pgvector-ready** so the Haystack **application** can later cut over indexing DocumentStore from InMemory to `PgvectorDocumentStore` (I0 factory → I1 pipeline; not implemented in this config pack).
+
+| Item | Value |
+|------|--------|
+| Image | `pgvector/pgvector:pg17` |
+| Extension | `vector` on `heavy_rental` |
+| Dim contract | `INDEXING_EMBEDDING_DIM=768` |
+| Spec Kit | [`specs/004-haystack-pgvector/`](./specs/004-haystack-pgvector/) |
+| App I0/I1 | **haystack-fast-api** application repo (future) |
+
+**Upgraded volumes:** init scripts run only on first data-dir init; the healthcheck also runs `CREATE EXTENSION IF NOT EXISTS vector`. Manual ensure:
+
+```bash
+docker exec postgres-haystack \
+  psql -U postgres -d heavy_rental -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+REST API **primary** does not need pgvector (fleet OLTP SoT stays plain Postgres 17).
 
 ---
 

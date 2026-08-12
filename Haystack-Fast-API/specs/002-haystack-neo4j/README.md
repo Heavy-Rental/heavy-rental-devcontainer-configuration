@@ -17,3 +17,5 @@ Neo4j 5 Community in the Haystack Fast API devcontainer for **neo4j-haystack** D
 
 **Implementation:** `Haystack-Fast-API/.devcontainer/docker-compose.yml`, `devcontainer.json`  
 **OpenSpec:** `openspec/specs/haystack-devcontainer/spec.md` (SoT) + archive `add-haystack-neo4j`
+
+**Related:** durable project-chunk vectors on Postgres use **pgvector** ([`../004-haystack-pgvector/`](../004-haystack-pgvector/)); Neo4j remains the graph DocumentStore / future KG-2 path.

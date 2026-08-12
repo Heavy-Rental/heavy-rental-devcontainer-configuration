@@ -9,7 +9,8 @@ openspec/
 └── changes/
     └── archive/
         ├── 2026-08-09-add-rest-api-devcontainer-variants/
-        └── 2026-08-12-phase4-d0-schema-contract-fleet-source/
+        ├── 2026-08-12-phase4-d0-schema-contract-fleet-source/
+        └── 2026-08-12-phase5-peer-pgvector-platform-note/
 ```
 
 ## Source of truth
@@ -22,6 +23,7 @@ openspec/
 - With-replica: `db-replica-one` on host **5433**, streaming standby
 - Without-replica: primary only
 - Phase 4: primary is Haystack fleet **pull source**; D0 producer schema contract (`asset`, `booking`, `category`)
+- Phase 5 peer: Haystack may use **pgvector** on `postgres-haystack`; this pack’s primary MUST NOT require `vector`
 
 ## Archived changes
 
@@ -29,6 +31,7 @@ openspec/
 |---|---|
 | [2026-08-09-add-rest-api-devcontainer-variants](./changes/archive/2026-08-09-add-rest-api-devcontainer-variants/) | Document dual packs + promote workflow |
 | [2026-08-12-phase4-d0-schema-contract-fleet-source](./changes/archive/2026-08-12-phase4-d0-schema-contract-fleet-source/) | Phase 4 D0 schema contract + fleet source docs |
+| [2026-08-12-phase5-peer-pgvector-platform-note](./changes/archive/2026-08-12-phase5-peer-pgvector-platform-note/) | Phase 5 peer: Haystack pgvector; primary without vector |
 
 ## Spec Kit
 

@@ -15,6 +15,7 @@ Change history:
 
 - `openspec/changes/archive/2026-08-09-add-rest-api-devcontainer-variants/`
 - `openspec/changes/archive/2026-08-12-phase4-d0-schema-contract-fleet-source/` — Phase 4 D0 schema contract + primary as Haystack fleet pull source
+- `openspec/changes/archive/2026-08-12-phase5-peer-pgvector-platform-note/` — Phase 5 peer: Haystack pgvector platform; primary does not require vector
 
 Spec Kit: `specs/001-rest-api-devcontainer/`.
 
@@ -122,3 +123,13 @@ Spec Kit MUST publish a versioned producer schema contract at `specs/001-rest-ap
 - **GIVEN** a checkout of this repository
 - **WHEN** an operator opens the REST Spec Kit contracts folder
 - **THEN** `schema-contract.md` exists at version 1.0
+
+### Requirement: Primary does not require pgvector (Phase 5 peer)
+
+Peer Haystack may enable **pgvector** on **its** local database (`postgres-haystack`) for a future DocumentStore cutover. This pack’s `postgres-primary` MUST remain a standard Postgres OLTP image for Spring and MUST NOT require extension `vector` or a pgvector image.
+
+#### Scenario: Primary topology unchanged by Haystack pgvector
+
+- **GIVEN** Haystack pack has pgvector platform ready (T5/D4)
+- **WHEN** an operator inspects REST Compose primary image/settings
+- **THEN** primary remains plain Postgres 17 (or pack-equivalent) without a pgvector requirement
