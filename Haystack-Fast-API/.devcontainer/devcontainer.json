@@ -9,8 +9,8 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
-	// 5434 Postgres host map; 7474 Neo4j Browser; 7687 Neo4j Bolt
-	"forwardPorts": [5434, 7474, 7687],
+	// 5434 Postgres host map; 7474 Neo4j Browser; 7687 Neo4j Bolt; 8089 neo4j-populate admin
+	"forwardPorts": [5434, 7474, 7687, 8089],
 
 	// postCreate: workspace ownership, uv, neo4j-haystack (FAISS not installed by default)
 	"postCreateCommand": "sudo chown -R vscode:vscode /workspaces/haystack-fast-api && curl -LsSf https://astral.sh/uv/install.sh | sh && export PATH=\"$HOME/.local/bin:$PATH\" && (uv pip install neo4j-haystack || pip install --user neo4j-haystack || true)",

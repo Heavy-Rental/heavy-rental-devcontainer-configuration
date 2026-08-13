@@ -79,6 +79,37 @@ docker exec neo4j-haystack cypher-shell -u neo4j -p heavyrental \
 
 Run `--once` twice; Cypher counts for `:Asset` unchanged for same seed.
 
+## 7. Admin HTTP (T4)
+
+```bash
+curl -sS http://localhost:8089/health
+curl -sS -X POST http://localhost:8089/v1/populate
+curl -sS http://localhost:8089/v1/status
+```
+
+**Expect:** health `ok`; populate returns **202**; logs show a cycle.
+
+## 8. Post-sync trigger (T4)
+
+With both sync and populate running and a successful merge:
+
+```bash
+docker logs postgres-haystack-sync --tail 50 | grep 'TRIGGER neo4j-populate'
+```
+
+**Expect:** `status=ok` when populate is up. Stop populate and re-run a successful merge: trigger may `fail` but cycle `status=success`.
+
+## 9. Never drop KG-1 (T4)
+
+Same as isolation §5 with explicit name KG-1 / `Document`. Optionally:
+
+```bash
+docker exec -e FLEET_LABELS=Document neo4j-populate \
+  python3 /usr/local/bin/populate_neo4j.py --once
+```
+
+**Expect:** refuse write/delete for `Document`; existing Document nodes remain.
+
 ## Checklist
 
 | ID | Check | ☐ |
@@ -88,3 +119,6 @@ Run `--once` twice; Cypher counts for `:Asset` unchanged for same seed.
 | SC-003 | Document survives rebuild | |
 | SC-004 | Spec Kit contracts present | |
 | SC-005 | Env overrides documented | |
+| SC-006 | Post-sync trigger best-effort | |
+| SC-007 | Admin HTTP 202 + cycle | |
+| SC-008 | KG-1 labels never dropped | |

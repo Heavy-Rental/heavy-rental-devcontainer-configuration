@@ -3,7 +3,8 @@
 # OpenSpec: openspec/specs/haystack-devcontainer/spec.md
 # Note: FAISS (specs/003) removed from default stack — not wired in compose/postCreate.
 # Phase 5 T5/D4: postgres-haystack uses pgvector image + vector extension (platform ready; I0/I1 app cutover later).
-# Phase 8 T3 / PR-L 8.1: neo4j-populate projects fleet SQL → Cypher MERGE (labels isolated from DocumentStore).
+# Phase 8 T3 / PR-L 8.1: neo4j-populate projects fleet SQL → Cypher MERGE (KG-2 labels isolated from DocumentStore).
+# Phase 8.2 T4 / PR-M: post-sync + admin HTTP trigger; scoped delete; never drop KG-1 labels.
 volumes:
   haystack-fast-api-data:
   postgres-haystack-data:
@@ -74,9 +75,12 @@ services:
   # Near-real-time merge-upsert from REST API postgres-primary (see scripts/sync-from-primary.sh).
   # Poll interval default 60s (not CDC). Skip+sleep when primary missing (restart: unless-stopped).
   # Feasibility_Study §11 T1: D1→D2 near-RT domain sync.
+  # Phase 8.2 T4: after successful merge, best-effort POST to neo4j-populate (curl in image).
   postgres-haystack-sync:
     container_name: postgres-haystack-sync
-    image: postgres:17
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres-sync
     depends_on:
       postgres-haystack:
         condition: service_healthy
@@ -112,6 +116,9 @@ services:
       SYNC_UNIQUE_INDEXES: "false"
       SAFE_TYPE_WIDENINGS: "false"
       SYNC_FOREIGN_KEYS: "false"
+      # Phase 8.2 T4 / PR-M: trigger fleet Neo4j populate after successful merge (never fails sync).
+      NEO4J_POPULATE_TRIGGER_URL: "http://neo4j-populate:8089/v1/populate"
+      NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS: "5"
     volumes:
       - ./scripts/sync-from-primary.sh:/usr/local/bin/sync-from-primary.sh:ro
     entrypoint: ["/bin/bash", "/usr/local/bin/sync-from-primary.sh"]
@@ -144,8 +151,9 @@ services:
     networks:
       - heavy-rental-network
 
-  # Phase 8 T3 / PR-L 8.1: SQL → Cypher MERGE from postgres-haystack into fleet labels only.
-  # Does NOT clear DocumentStore nodes. Spec: specs/005-haystack-neo4j-populate/
+  # Phase 8 T3 / PR-L 8.1: SQL → Cypher MERGE from postgres-haystack into fleet (KG-2) labels only.
+  # Phase 8.2 T4 / PR-M: admin HTTP + post-sync trigger; scoped delete; never drop KG-1 (:Document).
+  # Spec: specs/005-haystack-neo4j-populate/
   neo4j-populate:
     container_name: neo4j-populate
     build:
@@ -169,8 +177,18 @@ services:
       # Same D0 fleet set as SYNC_TABLE_ALLOWLIST (001 merge-sync).
       FLEET_TABLE_ALLOWLIST: "asset,booking,category"
       FLEET_LABELS: "Asset,Booking,Category"
+      # KG-1 project / DocumentStore labels — never written or deleted by this job.
+      KG1_PROTECTED_LABELS: "Document"
       POPULATE_MODE: merge
+      # both = interval safety net + HTTP events (post-sync / admin).
+      POPULATE_TRIGGER_MODE: both
       POPULATE_INTERVAL_SECONDS: "60"
+      POPULATE_ORPHAN_DELETE: "false"
+      POPULATE_HTTP_PORT: "8089"
+      POPULATE_HTTP_ENABLED: "true"
+    ports:
+      # Host admin: curl -X POST http://localhost:8089/v1/populate
+      - "8089:8089"
     volumes:
       # Live-edit scripts without rebuild (image still has baked-in copies).
       - ./scripts/populate_neo4j.py:/usr/local/bin/populate_neo4j.py:ro

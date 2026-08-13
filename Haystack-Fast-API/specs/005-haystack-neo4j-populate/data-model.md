@@ -31,8 +31,8 @@ Uniqueness: `CREATE CONSTRAINT … IF NOT EXISTS FOR (n:Label) REQUIRE n.id IS U
 
 | Namespace | Labels | Touched by populate? |
 |-----------|--------|----------------------|
-| Fleet | `Asset`, `Booking`, `Category` | Yes |
-| DocumentStore | e.g. `Document` (neo4j-haystack) | **No** |
+| KG-2 Fleet | `Asset`, `Booking`, `Category` | Yes (MERGE / scoped delete) |
+| KG-1 Project / DocumentStore | `Document` (default protected) | **Never** |
 | Other | any non-fleet | **No** |
 
-Rebuild mode deletes only fleet labels listed in `FLEET_LABELS`.
+Rebuild / orphan delete operate only on fleet labels **minus** `KG1_PROTECTED_LABELS`.

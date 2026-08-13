@@ -1,0 +1,10 @@
+# Merge-sync client with curl for Phase 8.2 T4 post-success Neo4j populate trigger.
+# Spec: specs/001-haystack-postgres-merge-sync/, specs/005-haystack-neo4j-populate/
+FROM postgres:17
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Default entrypoint remains the sync script (set in compose).

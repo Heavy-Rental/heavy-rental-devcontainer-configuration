@@ -8,7 +8,7 @@ This folder ships a **single Compose-based devcontainer** for **Haystack Fast AP
 | Local Postgres | `postgres-haystack` | Writable relational DB + **pgvector** (`heavy_rental`; image `pgvector/pgvector:pg17`) |
 | Fleet merge-sync | `postgres-haystack-sync` | Near-RT **pull** from REST API `postgres-primary` (~60s poll) |
 | Neo4j | `neo4j-haystack` | Graph store for Haystack DocumentStore + fleet projection target |
-| Fleet Neo4j populate | `neo4j-populate` | SQL → Cypher **MERGE** fleet labels from local Postgres (~60s poll) |
+| Fleet Neo4j populate | `neo4j-populate` | SQL → Cypher **MERGE** KG-2 fleet labels; admin HTTP **8089**; post-sync trigger |
 
 **Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-haystack-postgres-merge-sync/`](./specs/001-haystack-postgres-merge-sync/) · [`specs/002-haystack-neo4j/`](./specs/002-haystack-neo4j/) · [`specs/004-haystack-pgvector/`](./specs/004-haystack-pgvector/) · [`specs/005-haystack-neo4j-populate/`](./specs/005-haystack-neo4j-populate/)  
 **Historical only (not in default stack):** [`specs/003-haystack-faiss/`](./specs/003-haystack-faiss/)
@@ -27,12 +27,14 @@ One stack: app + local Postgres + merge-sync job + Neo4j + fleet Neo4j populate.
 | pgvector | Extension **`vector`** on `heavy_rental` (Phase 5 T5 / D4 platform ready) |
 | Sync job | `postgres-haystack-sync` — source `postgres-primary`, target `postgres-haystack` |
 | Neo4j | `neo4j-haystack` — Browser **7474**, Bolt **7687** |
-| Fleet Neo4j populate | `neo4j-populate` — SQL → Cypher MERGE (`:Asset`/`:Booking`/`:Category`; isolated from DocumentStore) |
+| Fleet Neo4j populate | `neo4j-populate` — SQL → Cypher MERGE (KG-2 `:Asset`/`:Booking`/`:Category`; never drop KG-1 `:Document`) |
+| Populate admin HTTP | host **8089** → `POST /v1/populate`, `GET /health` |
+| Post-sync trigger | After successful merge, sync POSTs populate URL (best-effort; Phase 8.2 T4) |
 | App Postgres URL | `postgresql://postgres:postgres@postgres-haystack:5432/heavy_rental` |
 | App embedding dim | `INDEXING_EMBEDDING_DIM=768` (contract for future I0/I1 PgvectorDocumentStore) |
 | App Neo4j env | `NEO4J_URI=bolt://neo4j:7687`, user `neo4j`, password `heavyrental` |
 | Default sync interval | **60s** poll (`SYNC_INTERVAL_SECONDS`; not CDC) |
-| Default populate interval | **60s** poll (`POPULATE_INTERVAL_SECONDS`) |
+| Default populate interval | **60s** safety-net poll (`POPULATE_INTERVAL_SECONDS`; also event-triggered) |
 | Default table allowlist | `asset,booking,category` (`SYNC_TABLE_ALLOWLIST` / `FLEET_TABLE_ALLOWLIST`) |
 | VS Code Postgres profiles | **Haystack Local (R/W)** + **REST API Primary (source)** |
 | Neo4j IDE | **Neo4j for VS Code** (UI-managed connection; not `pgsql.connections`-style) |
@@ -54,17 +56,21 @@ app (Spring) ──R/W──► postgres-primary   postgres-haystack (local R/W)
 haystack-fast-api ──DATABASE_URL──────────────┘         │ SQL SELECT
 haystack-fast-api ──INDEXING_EMBEDDING_DIM──── (768)    ▼
 haystack-fast-api ──NEO4J_*──► neo4j-haystack ◄── MERGE ─ neo4j-populate
-                                 │  fleet: :Asset :Booking :Category
-                                 │  docs:  :Document (untouched)
+                                 │  KG-2 fleet: :Asset :Booking :Category
+                                 │  KG-1 docs:  :Document (never dropped)
+                                              ▲
+                         POST /v1/populate ───┘
+                         (admin :8089 + post-sync trigger)
 
 host localhost:5434 = postgres-haystack
 host localhost:7474 = Neo4j Browser
 host localhost:7687 = Neo4j Bolt
+host localhost:8089 = neo4j-populate admin HTTP
 ```
 
 **Note:** Merge-sync is a **pull** into Haystack. It does **not** write back to the REST API primary. Local-only rows on `postgres-haystack` are retained under default merge mode. When primary is down, the sync job **skips** the cycle and retries (default); local Postgres stays usable.
 
-**Fleet Neo4j populate** reads from `postgres-haystack` and **MERGE**s fleet-labeled nodes in Neo4j. It never wipes DocumentStore nodes. Details: [`specs/005-haystack-neo4j-populate/`](./specs/005-haystack-neo4j-populate/).
+**Fleet Neo4j populate** reads from `postgres-haystack` and **MERGE**s KG-2 fleet nodes. Scoped delete / rebuild never drops KG-1 (`:Document`). After each **successful** merge cycle, sync best-effort triggers populate via HTTP. Details: [`specs/005-haystack-neo4j-populate/`](./specs/005-haystack-neo4j-populate/).
 
 **Included in this pack**
 
@@ -72,7 +78,7 @@ host localhost:7687 = Neo4j Bolt
 - External Docker network: **`heavy-rental-network`**
 - Postgres 17 + **pgvector** local DB (`pgvector/pgvector:pg17`); name / user / password (dev): `heavy_rental` / `postgres` / `postgres`
 - `vector` extension bootstrap (initdb + healthcheck ensure); dim contract `INDEXING_EMBEDDING_DIM=768`
-- Forwarded ports: **5434** (Postgres), **7474** / **7687** (Neo4j)
+- Forwarded ports: **5434** (Postgres), **7474** / **7687** (Neo4j), **8089** (neo4j-populate admin)
 - Extensions: Postgres client (`ms-ossdata.vscode-pgsql`), Neo4j for VS Code (`neo4j-extensions.neo4j-for-vscode`)
 - Non-root user `vscode`; `postCreateCommand` fixes workspace ownership and installs `uv` + `neo4j-haystack` (best-effort)
 - FAISS is **not** wired in the default Compose / postCreate path

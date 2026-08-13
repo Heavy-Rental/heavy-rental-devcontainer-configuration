@@ -17,8 +17,16 @@ Expect `METRICS populate status=ok` or soft `status=skip_pg` / `skip_neo4j` when
 ## One-shot populate
 
 ```bash
+# CLI
 docker exec neo4j-populate python3 /usr/local/bin/populate_neo4j.py --once
+
+# Admin HTTP (Phase 8.2 T4) — host port 8089
+curl -X POST http://localhost:8089/v1/populate
+curl -X POST 'http://localhost:8089/v1/populate?mode=rebuild'
+curl http://localhost:8089/health
 ```
+
+Post-sync trigger: after a successful `postgres-haystack-sync` merge, the sync job POSTs the same URL (best-effort).
 
 ## Verify fleet nodes (Browser or cypher-shell)
 
