@@ -7,4 +7,7 @@
 - [x] T005 Env + fleet-graph contracts
 - [x] T006 OpenSpec SoT + archive
 - [x] T007 Operator README / quickstart / verification
+- [x] T009 T4 admin HTTP + trigger modes + KG1_PROTECTED_LABELS
+- [x] T010 T4 post-sync trigger in `sync-from-primary.sh` + curl sync image
+- [x] T011 T4 Spec Kit / OpenSpec updates (scoped delete, never drop KG-1)
 - [ ] T008 Operator runtime verification (see verification.md)

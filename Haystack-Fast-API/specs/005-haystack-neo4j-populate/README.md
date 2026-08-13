@@ -1,10 +1,12 @@
 # Spec Kit: Haystack Neo4j fleet populate (Phase 8 T3 / PR-L 8.1)
 
 **Feature**: `005-haystack-neo4j-populate`  
-**Status**: **Implemented** (config pack — SQL → Cypher MERGE)  
+**Status**: **Implemented** (T3 SQL→MERGE + **T4** post-sync/admin trigger, scoped delete, never drop KG-1)  
 **Date**: 2026-08-13
 
-Projects allowlisted fleet tables from **`postgres-haystack`** into **Neo4j** via idempotent Cypher **`MERGE`**. Fleet node labels (`:Asset`, `:Booking`, `:Category`) are **isolated** from Haystack **DocumentStore** nodes (e.g. `:Document`).
+Projects allowlisted fleet tables from **`postgres-haystack`** into **Neo4j** via idempotent Cypher **`MERGE`** (**KG-2** labels `:Asset`, `:Booking`, `:Category`). **KG-1** / DocumentStore labels (default `:Document`) are never written or deleted.
+
+**T4 triggers:** after successful `postgres-haystack-sync` merge (best-effort HTTP) or admin `POST /v1/populate` (host port **8089**).
 
 | Artifact | Description |
 |---|---|
@@ -29,7 +31,7 @@ Projects allowlisted fleet tables from **`postgres-haystack`** into **Neo4j** vi
 
 **Out of scope (application repo):**
 
-- Real `trigger_neo4j_populate` backend / recommend hot-path wiring
+- Agent `trigger_neo4j_populate` wiring into recommend (S8.3; may call this HTTP)
 - Attachment / compatibility graph beyond D0 tables
 - CDC (Phase 9)
 

@@ -10,7 +10,7 @@ The stack includes a **writable local PostgreSQL** database and a **merge-sync**
 
 **Neo4j:** local Community 5 instance for Haystack DocumentStore (`neo4j-haystack`), complementary to Postgres. Devcontainer installs the **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) for Cypher/Bolt in the IDE (Browser remains on port 7474). IDE connections are UI-managed (not a `pgsql.connections`-style settings array).
 
-**Fleet Neo4j populate (Phase 8 T3 / PR-L 8.1):** Compose service **`neo4j-populate`** projects allowlisted fleet tables from **`postgres-haystack`** into Neo4j via Cypher **`MERGE`** (`:Asset`, `:Booking`, `:Category`). Fleet labels are **isolated** from DocumentStore nodes. Default poll **60s**. Spec Kit `005-haystack-neo4j-populate`.
+**Fleet Neo4j populate (Phase 8 T3 / PR-L 8.1 + T4 / PR-M):** Compose service **`neo4j-populate`** projects allowlisted fleet tables from **`postgres-haystack`** into Neo4j via Cypher **`MERGE`** (KG-2 `:Asset`, `:Booking`, `:Category`). **KG-1** labels (default `:Document`) are never written or deleted. **T4:** post-successful-sync best-effort HTTP trigger + admin `POST /v1/populate` (port **8089**); scoped fleet delete only. Spec Kit `005-haystack-neo4j-populate`.
 
 **Pgvector (Phase 5 T5 / D4):** local Postgres uses image **`pgvector/pgvector:pg17`** with extension **`vector`** on `heavy_rental` (initdb + healthcheck ensure). App env documents **`INDEXING_EMBEDDING_DIM=768`** for future DocumentStore cutover. **I0/I1** (factory + pipeline writer) remain application work — not required for this platform requirement.
 
@@ -27,6 +27,7 @@ Change history:
 - 2026-08-12: Phase 4 / S4 — `SYNC_TABLE_ALLOWLIST` (T2), cycle lag `METRICS` (T1), D0 schema-contract.md; archive `2026-08-12-phase4-fleet-mirror-allowlist-d0`
 - 2026-08-12: Phase 5 Step 5.1 — T5 / D4 pgvector platform ready; archive `2026-08-12-phase5-t5-d4-pgvector-platform`
 - 2026-08-13: Phase 8 T3 / PR-L 8.1 — `neo4j-populate` SQL→Cypher MERGE, fleet label isolation; archive `2026-08-13-phase8-t3-populate-neo4j-from-haystack`
+- 2026-08-13: Phase 8.2 T4 / PR-M — post-sync + admin HTTP trigger, scoped delete, never drop KG-1; archive `2026-08-13-phase8-t4-neo4j-populate-trigger`
 
 Spec Kit (active): `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`, `specs/004-haystack-pgvector/`, `specs/005-haystack-neo4j-populate/`. Historical: `specs/003-haystack-faiss/`.
 
@@ -365,3 +366,28 @@ Application DocumentStore factory wiring and app-side `trigger_neo4j_populate` o
 - **GIVEN** the Haystack stack is started
 - **WHEN** Compose services are inspected
 - **THEN** `neo4j-populate` is defined and joins `heavy-rental-network`
+
+### Requirement: Fleet Neo4j populate trigger (Phase 8.2 T4)
+
+After a **successful** merge-sync cycle, the sync process MUST best-effort trigger fleet Neo4j populate when `NEO4J_POPULATE_TRIGGER_URL` is set (default `http://neo4j-populate:8089/v1/populate`). Trigger failure MUST NOT fail or roll back the merge cycle.
+
+The `neo4j-populate` service MUST expose admin HTTP including `POST /v1/populate` and `GET /health`. Populate MUST honor `KG1_PROTECTED_LABELS` (default `Document`) and MUST never delete or write those labels. Scoped delete (rebuild / optional orphan prune) MUST apply only to fleet labels minus protected labels.
+
+#### Scenario: Post-sync trigger on success
+
+- **GIVEN** merge completes successfully and the trigger URL is set
+- **WHEN** the sync job finishes the cycle
+- **THEN** it attempts an HTTP POST to the populate service
+- **AND** merge cycle status remains success even if the POST fails
+
+#### Scenario: Admin HTTP one-shot
+
+- **GIVEN** `neo4j-populate` is running
+- **WHEN** an operator POSTs `/v1/populate`
+- **THEN** a populate cycle is accepted without requiring the interval timer
+
+#### Scenario: KG-1 labels never dropped
+
+- **GIVEN** a node with a protected KG-1 label such as `:Document`
+- **WHEN** populate runs rebuild or orphan delete
+- **THEN** that node still exists

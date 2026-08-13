@@ -39,6 +39,9 @@ All values are strings in Compose; parsers MUST coerce integers/bools as documen
 | `SAFE_TYPE_WIDENINGS` | no | `false` | whitelisted type widenings only |
 | `SYNC_FOREIGN_KEYS` | no | `false` | reserved; not implemented (logs WARN if true) |
 | `SYNC_TABLE_ALLOWLIST` | no | `asset,booking,category` | comma-separated exact `public` relation names (Phase 4 T2 / D0). Values `all` or `*` merge every public table. See [schema-contract.md](./schema-contract.md) |
+| `NEO4J_POPULATE_TRIGGER_URL` | no | (compose: `http://neo4j-populate:8089/v1/populate`) | Phase 8.2 T4: best-effort `POST` after **successful** merge; empty disables. Failure MUST NOT fail the merge cycle. See [005 neo4j-populate-env](../../005-haystack-neo4j-populate/contracts/neo4j-populate-env.md) |
+| `NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS` | no | `5` | curl timeout for populate trigger |
+| `NEO4J_POPULATE_TRIGGER_TOKEN` | no | empty | Optional `X-Populate-Token` when populate auth is enabled |
 
 ## Policy matrix (default-on vs opt-in)
 

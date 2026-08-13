@@ -23,6 +23,10 @@
 #   SYNC_FOREIGN_KEYS=false        # reserved / not implemented (NOT VALID FKs) — logged if true
 #   SYNC_TABLE_ALLOWLIST=asset,booking,category
 #       # comma-separated public relation names (Phase 4 T2 / D0). Use "all" or "*" for full public merge.
+#   NEO4J_POPULATE_TRIGGER_URL=http://neo4j-populate:8089/v1/populate
+#       # Phase 8.2 T4: best-effort POST after successful merge (empty disables).
+#   NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS=5
+#   NEO4J_POPULATE_TRIGGER_TOKEN=   # optional X-Populate-Token
 set -euo pipefail
 
 SOURCE_HOST="${SOURCE_HOST:-postgres-primary}"
@@ -53,6 +57,10 @@ SAFE_TYPE_WIDENINGS="${SAFE_TYPE_WIDENINGS:-false}"
 SYNC_FOREIGN_KEYS="${SYNC_FOREIGN_KEYS:-false}"
 # Phase 4 T2: deterministic fleet table set (D0 schema-contract.md). "all"/"*" = every public table.
 SYNC_TABLE_ALLOWLIST="${SYNC_TABLE_ALLOWLIST:-asset,booking,category}"
+# Phase 8.2 T4 / PR-M: fire fleet Neo4j populate after successful merge (non-blocking for sync).
+NEO4J_POPULATE_TRIGGER_URL="${NEO4J_POPULATE_TRIGGER_URL:-}"
+NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS="${NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS:-5}"
+NEO4J_POPULATE_TRIGGER_TOKEN="${NEO4J_POPULATE_TRIGGER_TOKEN:-}"
 
 FDW_SERVER_NAME="${FDW_SERVER_NAME:-haystack_primary_src}"
 
@@ -835,6 +843,33 @@ run_merge() {
   return 0
 }
 
+# Phase 8.2 T4: best-effort HTTP trigger to neo4j-populate after successful merge.
+# Never fails the sync cycle if populate is down or curl missing.
+trigger_neo4j_populate_if_configured() {
+  local url timeout token curl_args
+  url="${NEO4J_POPULATE_TRIGGER_URL// /}"
+  if [[ -z "$url" ]]; then
+    log "TRIGGER neo4j-populate status=skip reason=url_unset"
+    return 0
+  fi
+  if ! command -v curl >/dev/null 2>&1; then
+    log "TRIGGER neo4j-populate status=fail reason=curl_missing url=${url}"
+    return 0
+  fi
+  timeout="${NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS:-5}"
+  token="${NEO4J_POPULATE_TRIGGER_TOKEN:-}"
+  curl_args=(-fsS -X POST -m "$timeout" -H "Content-Type: application/json" -d '{"mode":"merge"}')
+  if [[ -n "$token" ]]; then
+    curl_args+=(-H "X-Populate-Token: ${token}")
+  fi
+  if curl "${curl_args[@]}" "$url" >/dev/null 2>&1; then
+    log "TRIGGER neo4j-populate status=ok url=${url}"
+  else
+    log "TRIGGER neo4j-populate status=fail url=${url} (sync continues)"
+  fi
+  return 0
+}
+
 attempt_cycle() {
   local cycle_start_ms cycle_end_ms duration_ms status
   cycle_start_ms=$(now_ms)
@@ -860,6 +895,8 @@ attempt_cycle() {
   log "Source ${SOURCE_HOST} is reachable; starting merge"
   if run_merge; then
     status="success"
+    # Phase 8.2 T4: fire fleet Neo4j populate (scoped; never drops KG-1). Best-effort only.
+    trigger_neo4j_populate_if_configured
   else
     status="failed"
   fi
@@ -874,7 +911,7 @@ main() {
   apply_sync_mode
   parse_table_allowlist
   log "Haystack merge-sync starting"
-  log "Config: mode=${SYNC_MODE} schemas=${SOURCE_SCHEMAS} interval=${SYNC_INTERVAL_SECONDS}s halt=${HALT_ON_PRIMARY_UNAVAILABLE} evolution=${SCHEMA_EVOLUTION} unique_key=${ALLOW_UNIQUE_MERGE_KEY} drop_orphan=${DROP_ORPHAN_COLUMNS} indexes=${SYNC_INDEXES}/${SYNC_UNIQUE_INDEXES} type_widen=${SAFE_TYPE_WIDENINGS} fks=${SYNC_FOREIGN_KEYS} allowlist_mode=${ALLOWLIST_MODE} allowlist=${SYNC_TABLE_ALLOWLIST}"
+  log "Config: mode=${SYNC_MODE} schemas=${SOURCE_SCHEMAS} interval=${SYNC_INTERVAL_SECONDS}s halt=${HALT_ON_PRIMARY_UNAVAILABLE} evolution=${SCHEMA_EVOLUTION} unique_key=${ALLOW_UNIQUE_MERGE_KEY} drop_orphan=${DROP_ORPHAN_COLUMNS} indexes=${SYNC_INDEXES}/${SYNC_UNIQUE_INDEXES} type_widen=${SAFE_TYPE_WIDENINGS} fks=${SYNC_FOREIGN_KEYS} allowlist_mode=${ALLOWLIST_MODE} allowlist=${SYNC_TABLE_ALLOWLIST} neo4j_populate_trigger=${NEO4J_POPULATE_TRIGGER_URL:-unset}"
   if [[ "$SOURCE_SCHEMAS" != "public" ]]; then
     log "WARN: SOURCE_SCHEMAS=${SOURCE_SCHEMAS} — only public is supported in this version; non-public schemas ignored"
   fi
