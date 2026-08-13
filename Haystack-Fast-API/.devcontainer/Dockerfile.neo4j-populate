@@ -1,0 +1,16 @@
+# Fleet SQL → Neo4j Cypher MERGE worker (Phase 8 T3 / PR-L 8.1).
+# Spec: specs/005-haystack-neo4j-populate/
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+    "psycopg[binary]==3.2.9" \
+    "neo4j==5.28.1"
+
+# Scripts are mounted at runtime; copy for image self-containment / offline runs.
+COPY scripts/populate_neo4j.py /usr/local/bin/populate_neo4j.py
+COPY scripts/populate-neo4j-from-haystack.sh /usr/local/bin/populate-neo4j-from-haystack.sh
+RUN chmod +x /usr/local/bin/populate_neo4j.py /usr/local/bin/populate-neo4j-from-haystack.sh
+
+ENTRYPOINT ["/bin/bash", "/usr/local/bin/populate-neo4j-from-haystack.sh"]

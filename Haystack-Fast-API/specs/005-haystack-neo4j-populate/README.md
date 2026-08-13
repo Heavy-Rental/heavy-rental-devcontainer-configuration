@@ -1,0 +1,36 @@
+# Spec Kit: Haystack Neo4j fleet populate (Phase 8 T3 / PR-L 8.1)
+
+**Feature**: `005-haystack-neo4j-populate`  
+**Status**: **Implemented** (config pack — SQL → Cypher MERGE)  
+**Date**: 2026-08-13
+
+Projects allowlisted fleet tables from **`postgres-haystack`** into **Neo4j** via idempotent Cypher **`MERGE`**. Fleet node labels (`:Asset`, `:Booking`, `:Category`) are **isolated** from Haystack **DocumentStore** nodes (e.g. `:Document`).
+
+| Artifact | Description |
+|---|---|
+| [spec.md](./spec.md) | Requirements and success criteria |
+| [plan.md](./plan.md) | As-built plan |
+| [research.md](./research.md) | Design decisions |
+| [data-model.md](./data-model.md) | Labels, keys, relationships |
+| [contracts/neo4j-populate-env.md](./contracts/neo4j-populate-env.md) | Env contract |
+| [contracts/fleet-graph-contract.md](./contracts/fleet-graph-contract.md) | Graph isolation contract |
+| [verification.md](./verification.md) | Runtime checks |
+| [quickstart.md](./quickstart.md) | Operator entry |
+| [tasks.md](./tasks.md) | Task list |
+
+**Implementation:**
+
+- `.devcontainer/scripts/populate_neo4j.py`
+- `.devcontainer/scripts/populate-neo4j-from-haystack.sh`
+- `.devcontainer/Dockerfile.neo4j-populate`
+- Compose service `neo4j-populate`
+
+**OpenSpec:** `openspec/specs/haystack-devcontainer/spec.md` + archive `2026-08-13-phase8-t3-populate-neo4j-from-haystack`
+
+**Out of scope (application repo):**
+
+- Real `trigger_neo4j_populate` backend / recommend hot-path wiring
+- Attachment / compatibility graph beyond D0 tables
+- CDC (Phase 9)
+
+**Related:** [001 merge-sync](../001-haystack-postgres-merge-sync/) · [002 Neo4j DocumentStore](../002-haystack-neo4j/) · [004 pgvector](../004-haystack-pgvector/)

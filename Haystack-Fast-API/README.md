@@ -7,33 +7,36 @@ This folder ships a **single Compose-based devcontainer** for **Haystack Fast AP
 | App | `haystack-fast-api` | Dev workspace for the Haystack Fast API project |
 | Local Postgres | `postgres-haystack` | Writable relational DB + **pgvector** (`heavy_rental`; image `pgvector/pgvector:pg17`) |
 | Fleet merge-sync | `postgres-haystack-sync` | Near-RT **pull** from REST API `postgres-primary` (~60s poll) |
-| Neo4j | `neo4j-haystack` | Graph store for Haystack DocumentStore (neo4j-haystack) |
+| Neo4j | `neo4j-haystack` | Graph store for Haystack DocumentStore + fleet projection target |
+| Fleet Neo4j populate | `neo4j-populate` | SQL → Cypher **MERGE** fleet labels from local Postgres (~60s poll) |
 
-**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-haystack-postgres-merge-sync/`](./specs/001-haystack-postgres-merge-sync/) · [`specs/002-haystack-neo4j/`](./specs/002-haystack-neo4j/) · [`specs/004-haystack-pgvector/`](./specs/004-haystack-pgvector/)  
+**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-haystack-postgres-merge-sync/`](./specs/001-haystack-postgres-merge-sync/) · [`specs/002-haystack-neo4j/`](./specs/002-haystack-neo4j/) · [`specs/004-haystack-pgvector/`](./specs/004-haystack-pgvector/) · [`specs/005-haystack-neo4j-populate/`](./specs/005-haystack-neo4j-populate/)  
 **Historical only (not in default stack):** [`specs/003-haystack-faiss/`](./specs/003-haystack-faiss/)
 
 ---
 
 ## Stack overview
 
-One stack: app + local Postgres + merge-sync job + Neo4j. The app always uses the **local** database, not the REST API primary.
+One stack: app + local Postgres + merge-sync job + Neo4j + fleet Neo4j populate. The app always uses the **local** database, not the REST API primary.
 
 | | **Haystack default stack** |
 |---|----------------------------|
-| Compose services | `haystack-fast-api`, `postgres-haystack`, `postgres-haystack-sync`, `neo4j` |
+| Compose services | `haystack-fast-api`, `postgres-haystack`, `postgres-haystack-sync`, `neo4j`, `neo4j-populate` |
 | App container | `haystack-fast-api` |
 | Local Postgres | `postgres-haystack` — **pgvector/pgvector:pg17**, host port **5434** → container `5432` |
 | pgvector | Extension **`vector`** on `heavy_rental` (Phase 5 T5 / D4 platform ready) |
 | Sync job | `postgres-haystack-sync` — source `postgres-primary`, target `postgres-haystack` |
 | Neo4j | `neo4j-haystack` — Browser **7474**, Bolt **7687** |
+| Fleet Neo4j populate | `neo4j-populate` — SQL → Cypher MERGE (`:Asset`/`:Booking`/`:Category`; isolated from DocumentStore) |
 | App Postgres URL | `postgresql://postgres:postgres@postgres-haystack:5432/heavy_rental` |
 | App embedding dim | `INDEXING_EMBEDDING_DIM=768` (contract for future I0/I1 PgvectorDocumentStore) |
 | App Neo4j env | `NEO4J_URI=bolt://neo4j:7687`, user `neo4j`, password `heavyrental` |
 | Default sync interval | **60s** poll (`SYNC_INTERVAL_SECONDS`; not CDC) |
-| Default table allowlist | `asset,booking,category` (`SYNC_TABLE_ALLOWLIST`; use `all` for full public) |
+| Default populate interval | **60s** poll (`POPULATE_INTERVAL_SECONDS`) |
+| Default table allowlist | `asset,booking,category` (`SYNC_TABLE_ALLOWLIST` / `FLEET_TABLE_ALLOWLIST`) |
 | VS Code Postgres profiles | **Haystack Local (R/W)** + **REST API Primary (source)** |
 | Neo4j IDE | **Neo4j for VS Code** (UI-managed connection; not `pgsql.connections`-style) |
-| Best for | Haystack app work with a sandbox Postgres mirror of fleet data + pgvector platform + local Neo4j |
+| Best for | Haystack app work with a sandbox Postgres mirror of fleet data + pgvector platform + local Neo4j fleet graph |
 | Peer dependency | REST API stack optional for merge; primary must be up for successful fleet pull |
 
 ### Architecture sketch
@@ -47,10 +50,12 @@ postgres-primary (OLTP SoT)  ◄──pull──   postgres-haystack-sync
                                               ▼
 app (Spring) ──R/W──► postgres-primary   postgres-haystack (local R/W)
                                          + pgvector (extension vector)
-                                              ▲
-haystack-fast-api ──DATABASE_URL──────────────┘
-haystack-fast-api ──INDEXING_EMBEDDING_DIM──── (768; future I1)
-haystack-fast-api ──NEO4J_*──► neo4j-haystack
+                                              ▲         │
+haystack-fast-api ──DATABASE_URL──────────────┘         │ SQL SELECT
+haystack-fast-api ──INDEXING_EMBEDDING_DIM──── (768)    ▼
+haystack-fast-api ──NEO4J_*──► neo4j-haystack ◄── MERGE ─ neo4j-populate
+                                 │  fleet: :Asset :Booking :Category
+                                 │  docs:  :Document (untouched)
 
 host localhost:5434 = postgres-haystack
 host localhost:7474 = Neo4j Browser
@@ -58,6 +63,8 @@ host localhost:7687 = Neo4j Bolt
 ```
 
 **Note:** Merge-sync is a **pull** into Haystack. It does **not** write back to the REST API primary. Local-only rows on `postgres-haystack` are retained under default merge mode. When primary is down, the sync job **skips** the cycle and retries (default); local Postgres stays usable.
+
+**Fleet Neo4j populate** reads from `postgres-haystack` and **MERGE**s fleet-labeled nodes in Neo4j. It never wipes DocumentStore nodes. Details: [`specs/005-haystack-neo4j-populate/`](./specs/005-haystack-neo4j-populate/).
 
 **Included in this pack**
 
@@ -69,6 +76,7 @@ host localhost:7687 = Neo4j Bolt
 - Extensions: Postgres client (`ms-ossdata.vscode-pgsql`), Neo4j for VS Code (`neo4j-extensions.neo4j-for-vscode`)
 - Non-root user `vscode`; `postCreateCommand` fixes workspace ownership and installs `uv` + `neo4j-haystack` (best-effort)
 - FAISS is **not** wired in the default Compose / postCreate path
+- Fleet SQL → Neo4j populate job (`neo4j-populate`; Phase 8 T3)
 - DocumentStore factory / indexing → Pgvector writer (**I0/I1**) are **application** work, not this pack
 
 ---
@@ -115,7 +123,7 @@ Haystack-Fast-API/
 2. **File → Open Folder…** and select **`Haystack-Fast-API`** (the folder that contains `.devcontainer`).
 3. When prompted, use **Dev Containers: Reopen in Container**, or the Command Palette:
    - `Dev Containers: Reopen in Container`
-4. Wait for the image build and Compose services (`postgres-haystack`, `postgres-haystack-sync`, `neo4j`, app).
+4. Wait for the image build and Compose services (`postgres-haystack`, `postgres-haystack-sync`, `neo4j`, `neo4j-populate`, app).
 
 Alternatively, from the command palette: **Dev Containers: Open Folder in Container…** and select `Haystack-Fast-API`.
 

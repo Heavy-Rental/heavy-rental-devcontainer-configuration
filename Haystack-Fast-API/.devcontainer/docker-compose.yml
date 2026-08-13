@@ -1,7 +1,9 @@
-# Spec: specs/001-haystack-postgres-merge-sync/, specs/002-haystack-neo4j/, specs/004-haystack-pgvector/
+# Spec: specs/001-haystack-postgres-merge-sync/, specs/002-haystack-neo4j/, specs/004-haystack-pgvector/,
+#       specs/005-haystack-neo4j-populate/
 # OpenSpec: openspec/specs/haystack-devcontainer/spec.md
 # Note: FAISS (specs/003) removed from default stack — not wired in compose/postCreate.
 # Phase 5 T5/D4: postgres-haystack uses pgvector image + vector extension (platform ready; I0/I1 app cutover later).
+# Phase 8 T3 / PR-L 8.1: neo4j-populate projects fleet SQL → Cypher MERGE (labels isolated from DocumentStore).
 volumes:
   haystack-fast-api-data:
   postgres-haystack-data:
@@ -119,6 +121,7 @@ services:
 
   # Neo4j for Haystack DocumentStore (neo4j-haystack). Complements Postgres domain DB.
   # Browser: http://localhost:7474  Bolt: bolt://localhost:7687  Auth: neo4j/heavyrental (dev only)
+  # Fleet KG-2 projection uses the same instance with isolated labels (:Asset/:Booking/:Category).
   neo4j:
     container_name: neo4j-haystack
     image: neo4j:5
@@ -138,6 +141,41 @@ services:
       timeout: 10s
       retries: 12
       start_period: 45s
+    networks:
+      - heavy-rental-network
+
+  # Phase 8 T3 / PR-L 8.1: SQL → Cypher MERGE from postgres-haystack into fleet labels only.
+  # Does NOT clear DocumentStore nodes. Spec: specs/005-haystack-neo4j-populate/
+  neo4j-populate:
+    container_name: neo4j-populate
+    build:
+      context: .
+      dockerfile: Dockerfile.neo4j-populate
+    depends_on:
+      postgres-haystack:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres-haystack
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: heavy_rental
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: heavyrental
+      NEO4J_DATABASE: neo4j
+      # Same D0 fleet set as SYNC_TABLE_ALLOWLIST (001 merge-sync).
+      FLEET_TABLE_ALLOWLIST: "asset,booking,category"
+      FLEET_LABELS: "Asset,Booking,Category"
+      POPULATE_MODE: merge
+      POPULATE_INTERVAL_SECONDS: "60"
+    volumes:
+      # Live-edit scripts without rebuild (image still has baked-in copies).
+      - ./scripts/populate_neo4j.py:/usr/local/bin/populate_neo4j.py:ro
+      - ./scripts/populate-neo4j-from-haystack.sh:/usr/local/bin/populate-neo4j-from-haystack.sh:ro
+    restart: unless-stopped
     networks:
       - heavy-rental-network
 

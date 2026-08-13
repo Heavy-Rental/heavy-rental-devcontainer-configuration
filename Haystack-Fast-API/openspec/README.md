@@ -14,7 +14,8 @@ openspec/
         ├── 2026-08-09-add-neo4j-vscode-extension/
         ├── 2026-08-09-document-neo4j-vscode-ui-connections/
         ├── 2026-08-12-phase4-fleet-mirror-allowlist-d0/
-        └── 2026-08-12-phase5-t5-d4-pgvector-platform/
+        ├── 2026-08-12-phase5-t5-d4-pgvector-platform/
+        └── 2026-08-13-phase8-t3-populate-neo4j-from-haystack/
 ```
 
 ## Source of truth
@@ -26,6 +27,7 @@ openspec/
 - Unique-key merge, additive schema evolution, opt-in parity flags / `SYNC_MODE`
 - **Phase 5 T5 / D4:** `postgres-haystack` image `pgvector/pgvector:pg17`, extension `vector`, app env `INDEXING_EMBEDDING_DIM=768` (platform ready; I0/I1 app cutover later)
 - **Neo4j 5** (`neo4j` / `neo4j-haystack`) for Haystack DocumentStore (`neo4j-haystack` package)
+- **Phase 8 T3 / PR-L 8.1:** `neo4j-populate` projects fleet SQL → Cypher MERGE (`:Asset`/`:Booking`/`:Category`; isolated from DocumentStore)
 - **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) installed in the devcontainer; connections are UI-managed (not `pgsql.connections`-style settings)
 - App env: `DATABASE_URL` (Postgres) + `INDEXING_EMBEDDING_DIM` + `NEO4J_*` (Bolt)
 - **FAISS** is **not** in the default stack (historical Spec Kit `003` / archive only)
@@ -41,12 +43,14 @@ openspec/
 | [2026-08-09-document-neo4j-vscode-ui-connections](./changes/archive/2026-08-09-document-neo4j-vscode-ui-connections/) | Neo4j IDE connections are UI-managed (not settings profiles) |
 | [2026-08-12-phase4-fleet-mirror-allowlist-d0](./changes/archive/2026-08-12-phase4-fleet-mirror-allowlist-d0/) | Phase 4 T1 lag metrics, T2 allowlist, D0 schema contract |
 | [2026-08-12-phase5-t5-d4-pgvector-platform](./changes/archive/2026-08-12-phase5-t5-d4-pgvector-platform/) | Phase 5 T5 / D4 pgvector platform ready |
+| [2026-08-13-phase8-t3-populate-neo4j-from-haystack](./changes/archive/2026-08-13-phase8-t3-populate-neo4j-from-haystack/) | Phase 8 T3 / PR-L 8.1 fleet Neo4j populate (SQL→MERGE) |
 
 **Spec Kit (active):**
 
 - [specs/001-haystack-postgres-merge-sync/](../specs/001-haystack-postgres-merge-sync/)
 - [specs/002-haystack-neo4j/](../specs/002-haystack-neo4j/)
 - [specs/004-haystack-pgvector/](../specs/004-haystack-pgvector/)
+- [specs/005-haystack-neo4j-populate/](../specs/005-haystack-neo4j-populate/)
 
 **Spec Kit (historical — not wired in default devcontainer):**
 
@@ -57,3 +61,4 @@ openspec/
 - Postgres merge: [001 verification](../specs/001-haystack-postgres-merge-sync/verification.md)
 - Neo4j: [002 verification](../specs/002-haystack-neo4j/verification.md)
 - pgvector platform: [004 verification](../specs/004-haystack-pgvector/verification.md)
+- Fleet Neo4j populate: [005 verification](../specs/005-haystack-neo4j-populate/verification.md)
