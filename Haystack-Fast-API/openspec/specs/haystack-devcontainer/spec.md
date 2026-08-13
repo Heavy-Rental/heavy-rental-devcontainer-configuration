@@ -10,6 +10,8 @@ The stack includes a **writable local PostgreSQL** database and a **merge-sync**
 
 **Neo4j:** local Community 5 instance for Haystack DocumentStore (`neo4j-haystack`), complementary to Postgres. Devcontainer installs the **Neo4j for VS Code** extension (`neo4j-extensions.neo4j-for-vscode`) for Cypher/Bolt in the IDE (Browser remains on port 7474). IDE connections are UI-managed (not a `pgsql.connections`-style settings array).
 
+**Fleet Neo4j populate (Phase 8 T3 / PR-L 8.1):** Compose service **`neo4j-populate`** projects allowlisted fleet tables from **`postgres-haystack`** into Neo4j via Cypher **`MERGE`** (`:Asset`, `:Booking`, `:Category`). Fleet labels are **isolated** from DocumentStore nodes. Default poll **60s**. Spec Kit `005-haystack-neo4j-populate`.
+
 **Pgvector (Phase 5 T5 / D4):** local Postgres uses image **`pgvector/pgvector:pg17`** with extension **`vector`** on `heavy_rental` (initdb + healthcheck ensure). App env documents **`INDEXING_EMBEDDING_DIM=768`** for future DocumentStore cutover. **I0/I1** (factory + pipeline writer) remain application work — not required for this platform requirement.
 
 **FAISS:** not part of the default stack (env and postCreate install removed). Spec Kit `003` retained as historical only.
@@ -24,20 +26,21 @@ Change history:
 - 2026-08-10: **FAISS removed** from compose env and `postCreateCommand` (no longer SoT)
 - 2026-08-12: Phase 4 / S4 — `SYNC_TABLE_ALLOWLIST` (T2), cycle lag `METRICS` (T1), D0 schema-contract.md; archive `2026-08-12-phase4-fleet-mirror-allowlist-d0`
 - 2026-08-12: Phase 5 Step 5.1 — T5 / D4 pgvector platform ready; archive `2026-08-12-phase5-t5-d4-pgvector-platform`
+- 2026-08-13: Phase 8 T3 / PR-L 8.1 — `neo4j-populate` SQL→Cypher MERGE, fleet label isolation; archive `2026-08-13-phase8-t3-populate-neo4j-from-haystack`
 
-Spec Kit (active): `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`, `specs/004-haystack-pgvector/`. Historical: `specs/003-haystack-faiss/`.
+Spec Kit (active): `specs/001-haystack-postgres-merge-sync/`, `specs/002-haystack-neo4j/`, `specs/004-haystack-pgvector/`, `specs/005-haystack-neo4j-populate/`. Historical: `specs/003-haystack-faiss/`.
 
 ## Requirements
 
 ### Requirement: Devcontainer Compose stack
 
-The Haystack Fast API development environment MUST start via Docker Compose using `Haystack-Fast-API/.devcontainer/docker-compose.yml`, attach to the external network `heavy-rental-network`, and include the application service, local Postgres (`postgres-haystack` / `postgres-haystack-sync`), and Neo4j services.
+The Haystack Fast API development environment MUST start via Docker Compose using `Haystack-Fast-API/.devcontainer/docker-compose.yml`, attach to the external network `heavy-rental-network`, and include the application service, local Postgres (`postgres-haystack` / `postgres-haystack-sync`), Neo4j, and fleet Neo4j populate (`neo4j-populate`) services.
 
 #### Scenario: Stack services
 
 - **GIVEN** this configuration is deployed
 - **WHEN** a developer inspects Compose services
-- **THEN** `haystack-fast-api`, `postgres-haystack`, `postgres-haystack-sync`, and `neo4j` are defined
+- **THEN** `haystack-fast-api`, `postgres-haystack`, `postgres-haystack-sync`, `neo4j`, and `neo4j-populate` are defined
 - **AND** all join `heavy-rental-network`
 
 #### Scenario: App service joins shared network
@@ -336,3 +339,29 @@ Spec Kit MUST publish a versioned fleet domain schema contract (`specs/001-hayst
 - **GIVEN** a checkout of this repository
 - **WHEN** an operator opens the Haystack merge-sync contracts folder
 - **THEN** `schema-contract.md` exists at version 1.0 and documents default allowlist tables
+
+### Requirement: Fleet Neo4j populate from local Postgres (Phase 8 T3)
+
+The Haystack Compose stack MUST provide a `neo4j-populate` process that projects allowlisted fleet tables from `postgres-haystack` (`heavy_rental` / `public`) into Neo4j using parameterized Cypher **`MERGE`** keyed by `id`. Default allowlist MUST be `asset,booking,category`. Default fleet labels MUST be `Asset`, `Booking`, `Category`.
+
+Populate MUST isolate fleet labels from DocumentStore: it MUST NOT delete or rewrite non-fleet labels, MUST NOT clear the entire graph, and rebuild mode MUST be label-scoped only. Missing tables or missing `id` columns MUST be skipped without hard-failing the long-running job. The process MUST soft-skip when Postgres or Neo4j is unavailable and retry after `POPULATE_INTERVAL_SECONDS` (default 60).
+
+Application DocumentStore factory wiring and app-side `trigger_neo4j_populate` orchestration are **not** required by this platform requirement.
+
+#### Scenario: Fleet nodes merged from local SQL
+
+- **GIVEN** `postgres-haystack` has rows in allowlisted tables with an `id` column and Neo4j is healthy
+- **WHEN** a successful populate cycle completes
+- **THEN** corresponding nodes exist under fleet labels in Neo4j
+
+#### Scenario: DocumentStore nodes survive populate
+
+- **GIVEN** a non-fleet node such as `:Document` exists in Neo4j
+- **WHEN** populate runs in `merge` or `rebuild` mode
+- **THEN** that non-fleet node still exists
+
+#### Scenario: Service present on shared network
+
+- **GIVEN** the Haystack stack is started
+- **WHEN** Compose services are inspected
+- **THEN** `neo4j-populate` is defined and joins `heavy-rental-network`

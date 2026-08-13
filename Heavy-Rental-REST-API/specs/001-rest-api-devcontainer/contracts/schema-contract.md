@@ -61,7 +61,7 @@ Exact Java enum constants live in the Spring application. For mirror consumers, 
 
 - Full Flyway/Liquibase dump of every column
 - Bidirectional sync or Spring→Haystack write-back
-- Neo4j graph projection (Phase 8)
+- Neo4j graph projection (Phase 8) — implemented on Haystack pack as `neo4j-populate` / Spec Kit `005-haystack-neo4j-populate` (not on this REST pack)
 - Application entity Java source as the normative runtime SoT (OpenSpec app contracts may refine enums later)
 
 ## Versioning
