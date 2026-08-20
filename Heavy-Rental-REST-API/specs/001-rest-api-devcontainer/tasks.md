@@ -12,3 +12,5 @@
 - [ ] T010 Operator confirm SC-006/SC-007 (schema contract present; network T0)
 - [x] T011 Phase 5 peer docs: Haystack pgvector platform; primary does not require vector
 - [x] T012 OpenSpec archive `2026-08-12-phase5-peer-pgvector-platform-note`
+- [x] T013 Stripe CLI in both pack Dockerfiles + `start-stripe-listen.sh` / `postStartCommand`
+- [x] T014 OpenSpec archive `2026-08-20-add-stripe-cli`

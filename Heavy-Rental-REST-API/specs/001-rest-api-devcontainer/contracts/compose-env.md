@@ -11,6 +11,8 @@
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://db-primary:5432/heavy_rental` | Always primary |
 | `SPRING_DATASOURCE_USERNAME` | `postgres` | |
 | `SPRING_DATASOURCE_PASSWORD` | `postgres` | |
+| `STRIPE_CLI_FORWARD_TO` | `http://localhost:8080/api/payments/webhook` | Optional; helper default if unset |
+| `STRIPE_API_KEY` | (unset) | Optional test key; **do not** commit live secrets |
 
 ## Host ports
 

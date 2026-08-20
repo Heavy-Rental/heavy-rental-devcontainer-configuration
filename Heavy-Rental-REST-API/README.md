@@ -54,6 +54,7 @@ host localhost:5433 = replica
 - Forwarded app port **8080**
 - Extensions: Java Pack, Spring Boot Extension Pack, Postgres client
 - Non-root user `vscode`; `postCreateCommand` fixes workspace ownership
+- **Stripe CLI** (`stripe`) in the app image; see [Stripe CLI](#stripe-cli) below
 
 ---
 
@@ -142,9 +143,40 @@ docker exec postgres-replica-one \
 
 # App datasource (inside app container)
 docker exec heavy-rental-rest-api printenv | grep SPRING_DATASOURCE
+
+# Stripe CLI (both packs)
+docker exec heavy-rental-rest-api stripe --version
 ```
 
 Full runbooks: [`specs/001-rest-api-devcontainer/verification.md`](./specs/001-rest-api-devcontainer/verification.md) · quickstart: [`specs/001-rest-api-devcontainer/quickstart.md`](./specs/001-rest-api-devcontainer/quickstart.md)
+
+---
+
+## Stripe CLI
+
+Both packs install the official **Stripe CLI** (`stripe`) in `heavy-rental-rest-api`.
+
+**Spring Boot Dashboard Run cannot start extra processes.** Clicking Run only starts the JVM. `stripe listen` is not tied to that button.
+
+Closest local-dev behavior: when the **container starts**, `postStartCommand` runs `/usr/local/bin/start-stripe-listen.sh`. If you have already run `stripe login` or set `STRIPE_API_KEY` (test key), it starts:
+
+```bash
+stripe listen --forward-to http://localhost:8080/api/payments/webhook
+```
+
+`localhost:8080` is correct because Dashboard-run Spring Boot listens **inside the same container**. Override the URL with `STRIPE_CLI_FORWARD_TO`.
+
+First time (or after a rebuild that dropped `~/.config/stripe`):
+
+```bash
+# in the app container terminal
+stripe login
+/usr/local/bin/start-stripe-listen.sh
+```
+
+Then click **Run** in Spring Boot Dashboard. Webhook forwards may  connection-refuse until the app binds 8080; Stripe retries.
+
+Do **not** put live Stripe secrets in Compose. This pack does not add a Stripe sidecar service.
 
 ---
 

@@ -21,6 +21,16 @@ Then in VS Code: open **`Heavy-Rental-REST-API`** → **Dev Containers: Reopen i
 
 Primary: `localhost:5432` · Replica (if chosen): `localhost:5433` · App: port `8080`.
 
+### Stripe CLI
+
+The app image includes `stripe`. Spring Boot Dashboard **Run** does not start `stripe listen`. After `stripe login` (or `STRIPE_API_KEY`), container start runs:
+
+```bash
+stripe listen --forward-to http://localhost:8080/api/payments/webhook
+```
+
+Manual: `/usr/local/bin/start-stripe-listen.sh` inside `heavy-rental-rest-api`.
+
 ### Phase 4 — Haystack fleet mirror (peer)
 
 - Primary container **`postgres-primary`** on **`heavy-rental-network`** is the source Haystack pulls from.

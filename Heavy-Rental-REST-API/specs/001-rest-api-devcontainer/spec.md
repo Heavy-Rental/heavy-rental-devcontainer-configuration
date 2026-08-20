@@ -90,6 +90,8 @@ As a developer using the **without replica** pack, no replica service is require
 - **FR-013** (Phase 4 D0): Spec Kit MUST publish a versioned fleet domain [schema-contract.md](./contracts/schema-contract.md) (producer) listing tables used by Haystack fleet LTM allowlist (`asset`, `booking`, `category` by default).
 - **FR-014** (Phase 4): This pack MUST NOT implement Haystack merge-sync; REST primary is **pull source only**. Sync job lives in Haystack-Fast-API.
 - **FR-015** (Phase 5 peer): Primary MUST NOT require pgvector / extension `vector`. Haystack may enable pgvector on its local DB independently.
+- **FR-016**: Both packs MUST install the official Stripe CLI (`stripe`) in the `heavy-rental-rest-api` image.
+- **FR-017**: Both packs MUST provide `/usr/local/bin/start-stripe-listen.sh` as `postStartCommand`, defaulting `stripe listen --forward-to http://localhost:8080/api/payments/webhook`. Listen MUST start only when Stripe credentials exist; missing credentials MUST NOT fail container start. Spring Boot Dashboard Run is not required to start listen.
 
 ### Key Entities
 
@@ -109,6 +111,8 @@ As a developer using the **without replica** pack, no replica service is require
 - **SC-006** (Phase 4 D0): `contracts/schema-contract.md` v1.0 exists and documents default fleet tables.
 - **SC-007** (Phase 4 T0): Primary is documented as Haystack fleet pull source on `heavy-rental-network`.
 - **SC-008** (Phase 5 peer): Docs state primary does not require pgvector when Haystack T5/D4 is enabled.
+- **SC-009**: `docker exec heavy-rental-rest-api stripe --version` succeeds.
+- **SC-010**: `start-stripe-listen.sh` exists in the image and is referenced from `postStartCommand`.
 
 ## Assumptions
 

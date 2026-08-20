@@ -25,6 +25,8 @@ Spring Boot Java REST API devcontainer packs under `Heavy-Rental-REST-API/`, wit
 
 **Phase 5 peer:** Haystack local Postgres is **pgvector platform ready** (T5/D4). This pack does **not** install pgvector on `postgres-primary`. See [`../../../Haystack-Fast-API/specs/004-haystack-pgvector/`](../../../Haystack-Fast-API/specs/004-haystack-pgvector/).
 
+**Stripe CLI:** both packs install `stripe` in the app image. `postStartCommand` may start `stripe listen` when credentials exist. Spring Boot Dashboard Run does not start listen.
+
 **Packs (as-built):**
 
 - `Spring Boot REST API devcontainer with PostgreSQL Read Replica/.devcontainer/`

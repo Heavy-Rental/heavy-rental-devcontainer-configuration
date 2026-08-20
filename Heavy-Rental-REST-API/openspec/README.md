@@ -15,7 +15,8 @@ openspec/
     └── archive/
         ├── 2026-08-09-add-rest-api-devcontainer-variants/
         ├── 2026-08-12-phase4-d0-schema-contract-fleet-source/
-        └── 2026-08-12-phase5-peer-pgvector-platform-note/
+        ├── 2026-08-12-phase5-peer-pgvector-platform-note/
+        └── 2026-08-20-add-stripe-cli/
 ```
 
 ## Source of truth
@@ -29,6 +30,7 @@ openspec/
 - Without-replica: primary only
 - Phase 4: primary is Haystack fleet **pull source**; D0 producer schema contract (`asset`, `booking`, `category`)
 - Phase 5 peer: Haystack may use **pgvector** on `postgres-haystack`; this pack’s primary MUST NOT require `vector`
+- Stripe CLI (`stripe`) in the app image; `postStartCommand` starts `stripe listen` when credentials exist (Dashboard Run does not)
 
 ## Archived changes
 
@@ -37,6 +39,7 @@ openspec/
 | [2026-08-09-add-rest-api-devcontainer-variants](./changes/archive/2026-08-09-add-rest-api-devcontainer-variants/) | Document dual packs + promote workflow |
 | [2026-08-12-phase4-d0-schema-contract-fleet-source](./changes/archive/2026-08-12-phase4-d0-schema-contract-fleet-source/) | Phase 4 D0 schema contract + fleet source docs |
 | [2026-08-12-phase5-peer-pgvector-platform-note](./changes/archive/2026-08-12-phase5-peer-pgvector-platform-note/) | Phase 5 peer: Haystack pgvector; primary without vector |
+| [2026-08-20-add-stripe-cli](./changes/archive/2026-08-20-add-stripe-cli/) | Stripe CLI + webhook listen helper on container start |
 
 ## Spec Kit
 
