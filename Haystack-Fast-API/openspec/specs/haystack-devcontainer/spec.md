@@ -4,6 +4,8 @@
 
 Behavior of the **Haystack Fast API** development container stack as configured in this repository (`Haystack-Fast-API/.devcontainer`). This is the OpenSpec **source of truth** for current agreed behavior.
 
+Durable *why*: repo-root [`adr/`](../../../../adr/) (0003, 0004, 0007, 0008, 0009). Implementation contract: [`spdd/prompt/haystack-devcontainer.md`](../../../../spdd/prompt/haystack-devcontainer.md). Schema: `spec-driven-with-adr`.
+
 The stack includes a **writable local PostgreSQL** database and a **merge-sync** job that periodically upserts data from the REST API primary (`postgres-primary` / `heavy_rental`).
 
 **Default policy (sandbox merge):** additive schema evolution, PK or unique merge keys, retain local-only rows/columns, **skip** merge cycles if primary unreachable (retry after interval), **near-real-time poll** default **60s** (`SYNC_INTERVAL_SECONDS`; not CDC). **Table allowlist** default **`asset,booking,category`** (`SYNC_TABLE_ALLOWLIST`; Phase 4 T2 / D0); use `all` or `*` for full public merge. Cycle logs include **lag/duration metrics** (`duration_ms`, `expected_max_lag_seconds`). **Opt-in parity** flags and `SYNC_MODE=mirror` can enable drops, secondary indexes, and safe type widenings (see requirements below). Only the **`public`** schema is merged today. Set `HALT_ON_PRIMARY_UNAVAILABLE=true` to stop the job process when primary is down.

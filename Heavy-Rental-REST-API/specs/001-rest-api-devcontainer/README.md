@@ -31,4 +31,5 @@ Spring Boot Java REST API devcontainer packs under `Heavy-Rental-REST-API/`, wit
 - `Spring Boot REST API devcontainer without read replica/.devcontainer/`
 
 **Operator entry:** [`../../README.md`](../../README.md)  
-**OpenSpec SoT:** [`../../openspec/specs/rest-api-devcontainer/spec.md`](../../openspec/specs/rest-api-devcontainer/spec.md)
+**OpenSpec SoT:** [`../../openspec/specs/rest-api-devcontainer/spec.md`](../../openspec/specs/rest-api-devcontainer/spec.md)  
+**ADR / OpenSPDD:** [`../../../adr/`](../../../adr/) (0002, 0005, 0007, 0009) · [`../../../spdd/prompt/rest-api-devcontainer.md`](../../../spdd/prompt/rest-api-devcontainer.md)

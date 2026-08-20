@@ -270,6 +270,22 @@ Use this space to list resources you find helpful and would like to give credit 
 [JQuery-url]: https://jquery.com 
 
 
+## Documentation and specifications
+
+Local-development packs in this repository are specified with three complementary artifacts (plus GitHub Spec Kit workbooks):
+
+| Layer | Tool | Start here |
+|-------|------|------------|
+| Architecture narrative | — | [`ARCHITECTURE.md`](./ARCHITECTURE.md) |
+| **What** (behavior SoT) | OpenSpec (`spec-driven-with-adr`) | [`openspec/`](./openspec/) |
+| **How / not-how** | OpenSPDD REASONS Canvas | [`spdd/`](./spdd/) |
+| **Why** (durable decisions) | ADR | [`adr/`](./adr/) |
+| Process | — | [`docs/spec-governance.md`](./docs/spec-governance.md) |
+
+Pack OpenSpec + Spec Kit: [`Haystack-Fast-API/openspec/`](./Haystack-Fast-API/openspec/) · [`Heavy-Rental-REST-API/openspec/`](./Heavy-Rental-REST-API/openspec/) · [`Heavy-Rental-Web-Portal/openspec/`](./Heavy-Rental-Web-Portal/openspec/).
+
+Behavior-changing work uses OpenSpec order **proposal → specs → design → adr → tasks**, then updates the matching OpenSPDD canvas. Do not edit accepted files under `adr/`; add a new ADR that supersedes the old one.
+
 ## Setup Guide to create docker network heavy-rental-network
 1. The projects uses docker network heavy-rental-network to connect different docker containers used in this project.
 2. You need to manually create the docker network to allow different container to have visiblity on each other.

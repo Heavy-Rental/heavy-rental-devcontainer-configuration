@@ -33,6 +33,7 @@ DEFAULT_TABLE_LABELS: dict[str, str] = {
     "asset": "Asset",
     "booking": "Booking",
     "category": "Category",
+    "return_records": "Return_Records"
 }
 
 # Internal props written by this job (not from SQL)

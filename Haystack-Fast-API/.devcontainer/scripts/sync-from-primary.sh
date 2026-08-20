@@ -56,7 +56,7 @@ SYNC_UNIQUE_INDEXES="${SYNC_UNIQUE_INDEXES:-false}"
 SAFE_TYPE_WIDENINGS="${SAFE_TYPE_WIDENINGS:-false}"
 SYNC_FOREIGN_KEYS="${SYNC_FOREIGN_KEYS:-false}"
 # Phase 4 T2: deterministic fleet table set (D0 schema-contract.md). "all"/"*" = every public table.
-SYNC_TABLE_ALLOWLIST="${SYNC_TABLE_ALLOWLIST:-asset,booking,category}"
+SYNC_TABLE_ALLOWLIST="${SYNC_TABLE_ALLOWLIST:all}"
 # Phase 8.2 T4 / PR-M: fire fleet Neo4j populate after successful merge (non-blocking for sync).
 NEO4J_POPULATE_TRIGGER_URL="${NEO4J_POPULATE_TRIGGER_URL:-}"
 NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS="${NEO4J_POPULATE_TRIGGER_TIMEOUT_SECONDS:-5}"

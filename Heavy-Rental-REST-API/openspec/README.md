@@ -1,9 +1,14 @@
 # OpenSpec (SDD) artifacts — Heavy Rental REST API
 
-Lightweight OpenSpec layout for Spec-Driven Development of the REST API **devcontainer packs**.
+Lightweight OpenSpec layout for Spec-Driven Development of the REST API **devcontainer packs**. Schema: **`spec-driven-with-adr`** ([`config.yaml`](./config.yaml)).
+
+Durable ADRs (repo root): [`../../adr/`](../../adr/) (especially 0002, 0005, 0007, 0009). OpenSPDD canvas: [`../../spdd/prompt/rest-api-devcontainer.md`](../../spdd/prompt/rest-api-devcontainer.md). Process: [`../../docs/spec-governance.md`](../../docs/spec-governance.md).
+
+Change order: **proposal → specs → design → adr → tasks**. Do not edit accepted `adr/` files; supersede with a new ADR.
 
 ```text
 openspec/
+├── config.yaml                    # schema: spec-driven-with-adr
 ├── specs/
 │   └── rest-api-devcontainer/     # Source of truth
 └── changes/

@@ -100,7 +100,7 @@ services:
       # Phase 4 T1: lag/duration logged each cycle (METRICS duration_ms, expected_max_lag_seconds).
       SYNC_INTERVAL_SECONDS: "60"
       # Phase 4 T2 / D0: deterministic fleet tables (see contracts/schema-contract.md). Use "all" for full public merge.
-      SYNC_TABLE_ALLOWLIST: "asset,booking,category"
+      SYNC_TABLE_ALLOWLIST: "all"
       # Skip cycle + sleep when primary down (pairs with unless-stopped; avoid halt+restart storms).
       HALT_ON_PRIMARY_UNAVAILABLE: "false"
       PRIMARY_CHECK_RETRIES: "5"
@@ -175,8 +175,8 @@ services:
       NEO4J_PASSWORD: heavyrental
       NEO4J_DATABASE: neo4j
       # Same D0 fleet set as SYNC_TABLE_ALLOWLIST (001 merge-sync).
-      FLEET_TABLE_ALLOWLIST: "asset,booking,category"
-      FLEET_LABELS: "Asset,Booking,Category"
+      FLEET_TABLE_ALLOWLIST: "assets,bookings,asset_categories,return_records,rental_plan_records,rental_plan,indexing_project_chunks,delivery_records"
+      FLEET_LABELS: "Assets,Bookings,Asset_Category,Return_Records,Rental_Plan_Records,Rental_Plan,Indexing_Project_Chunks,Delivery_Records"
       # KG-1 project / DocumentStore labels — never written or deleted by this job.
       KG1_PROTECTED_LABELS: "Document"
       POPULATE_MODE: merge
