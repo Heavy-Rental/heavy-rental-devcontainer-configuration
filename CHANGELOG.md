@@ -4,6 +4,7 @@
 
 ### Added
 
+- Stripe CLI in both REST API pack images; `start-stripe-listen.sh` on container start (Dashboard Run cannot attach listen)
 - OpenSpec schema `spec-driven-with-adr` at repo root and in each pack (`openspec/config.yaml`)
 - Durable Architecture Decision Records `adr/0001`–`adr/0010`
 - OpenSPDD REASONS canvases under `spdd/`

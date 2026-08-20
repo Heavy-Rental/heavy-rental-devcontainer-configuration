@@ -15,7 +15,8 @@
 |-----------|--------|
 | Compose service | `heavy-rental-rest-api` |
 | Container | `heavy-rental-rest-api` |
-| Image build | `.devcontainer/Dockerfile` (Java 21 + Maven) |
+| Image build | `.devcontainer/Dockerfile` (Java 21 + Maven + Stripe CLI) |
+| Stripe CLI | `stripe` on PATH; helper `/usr/local/bin/start-stripe-listen.sh` |
 | Workspace volume | `heavy-rental-rest-api-data` → `/workspaces/heavy-rental-rest-api` |
 | Network | `heavy-rental-network` (external) |
 | Depends on | `db-primary` healthy |

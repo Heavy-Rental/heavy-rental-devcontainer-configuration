@@ -16,7 +16,7 @@
 	],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "sudo chown -R vscode:vscode /workspaces/heavy-rental-rest-api",
-	"postStartCommand": "echo 'Dev container ready'",
+	"postStartCommand": "/usr/local/bin/start-stripe-listen.sh",
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "java -version",
 	// Configure tool-specific properties.

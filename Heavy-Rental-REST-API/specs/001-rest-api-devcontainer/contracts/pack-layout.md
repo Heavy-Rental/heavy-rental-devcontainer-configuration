@@ -19,6 +19,7 @@ Heavy-Rental-REST-API/
     devcontainer.json
     docker-compose.yml
     Dockerfile
+    scripts/start-stripe-listen.sh
     postgres/…              # with-replica pack only
   README.md
 ```

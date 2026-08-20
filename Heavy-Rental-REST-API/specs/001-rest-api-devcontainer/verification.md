@@ -69,6 +69,16 @@ test -f Heavy-Rental-REST-API/specs/001-rest-api-devcontainer/contracts/schema-c
 Cross-stack merge behavior is verified in Haystack Spec Kit:  
 `Haystack-Fast-API/specs/001-haystack-postgres-merge-sync/verification.md` (SC-010–SC-012).
 
+## 7. Stripe CLI (SC-009 / SC-010)
+
+```bash
+docker exec heavy-rental-rest-api stripe --version
+docker exec heavy-rental-rest-api test -x /usr/local/bin/start-stripe-listen.sh && echo helper-ok
+grep -q start-stripe-listen.sh Heavy-Rental-REST-API/.devcontainer/devcontainer.json && echo postStart-ok
+```
+
+`stripe listen` starts only after `stripe login` or `STRIPE_API_KEY`. Dashboard Run does not start it.
+
 ## Pass checklist
 
 | ID | Check | Result |
@@ -80,6 +90,8 @@ Cross-stack merge behavior is verified in Haystack Spec Kit:
 | SC-005 | Names match data-model | ☐ |
 | SC-006 | D0 schema-contract.md present | ☐ |
 | SC-007 | Primary on heavy-rental-network (Haystack source) | ☐ |
+| SC-009 | `stripe --version` in app container | ☐ |
+| SC-010 | Listen helper + `postStartCommand` | ☐ |
 
 ## Troubleshooting
 
