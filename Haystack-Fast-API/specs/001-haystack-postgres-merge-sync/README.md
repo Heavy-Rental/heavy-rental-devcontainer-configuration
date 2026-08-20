@@ -26,6 +26,8 @@ GitHub [Spec Kit](https://github.com/github/spec-kit)–style feature package fo
 
 ## OpenSpec
 
+**ADR / OpenSPDD:** [`../../../adr/`](../../../adr/) (0003, 0004, 0009) · [`../../../spdd/prompt/haystack-devcontainer.md`](../../../spdd/prompt/haystack-devcontainer.md)
+
 | Path | Role |
 |---|---|
 | [openspec/specs/haystack-devcontainer/spec.md](../../openspec/specs/haystack-devcontainer/spec.md) | Source of truth |

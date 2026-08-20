@@ -1,9 +1,14 @@
 # OpenSpec (SDD) artifacts
 
-Lightweight [OpenSpec](https://github.com/Fission-AI/OpenSpec) layout for Spec-Driven Development in this project.
+Lightweight [OpenSpec](https://github.com/Fission-AI/OpenSpec) layout for Spec-Driven Development in this project. Schema: **`spec-driven-with-adr`** ([`config.yaml`](./config.yaml)).
+
+Durable ADRs (repo root): [`../../adr/`](../../adr/). OpenSPDD canvas: [`../../spdd/prompt/haystack-devcontainer.md`](../../spdd/prompt/haystack-devcontainer.md). Process: [`../../docs/spec-governance.md`](../../docs/spec-governance.md).
+
+Change order: **proposal → specs → design → adr → tasks**. Do not edit accepted `adr/` files; supersede with a new ADR.
 
 ```text
 openspec/
+├── config.yaml                    # schema: spec-driven-with-adr
 ├── specs/                         # Source of truth (current behavior)
 │   └── haystack-devcontainer/
 └── changes/

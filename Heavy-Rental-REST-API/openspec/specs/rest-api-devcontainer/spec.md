@@ -4,6 +4,8 @@
 
 Behavior of the **Heavy Rental Spring Boot REST API** development container packs under `Heavy-Rental-REST-API/`. This is the OpenSpec **source of truth** for agreed as-built behavior.
 
+Durable *why*: repo-root [`adr/`](../../../../adr/) (0002, 0005, 0007, 0009). Implementation contract: [`spdd/prompt/rest-api-devcontainer.md`](../../../../spdd/prompt/rest-api-devcontainer.md). Schema: `spec-driven-with-adr`.
+
 The project ships **two operator-selectable packs**:
 
 1. **With PostgreSQL Read Replica** — app + primary + streaming standby  

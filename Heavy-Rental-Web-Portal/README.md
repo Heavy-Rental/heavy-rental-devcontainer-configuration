@@ -8,7 +8,10 @@ This folder ships a **single Compose-based devcontainer** for the **Heavy Rental
 
 There is **no** local Postgres or Neo4j in this pack. Backend APIs and databases live in peer stacks (REST API, optionally Haystack) on the shared Docker network.
 
-**Specs (OpenSpec / Spec Kit):** not published under this folder yet. Monorepo setup guide: [`../README.md`](../README.md) → *Setup Guide for the React (Heavy Rental Web Portal) Project*.
+**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-web-portal-devcontainer/`](./specs/001-web-portal-devcontainer/)  
+**ADR / OpenSPDD:** [`../adr/0006-portal-calls-spring-only.md`](../adr/0006-portal-calls-spring-only.md) · [`../spdd/prompt/web-portal-devcontainer.md`](../spdd/prompt/web-portal-devcontainer.md) · [`../docs/spec-governance.md`](../docs/spec-governance.md)
+
+Monorepo setup guide: [`../README.md`](../README.md) → *Setup Guide for the React (Heavy Rental Web Portal) Project*.
 
 ---
 
@@ -169,7 +172,7 @@ heavy-rental-web-portal ──► heavy-rental-rest-api  ──►  (optional du
 
 This pack does **not** run a database or merge-sync job. Portal UX still talks to **Spring** only; durable multi-user project vectors (future) live on Haystack’s pgvector-ready Postgres after application I1 — not in this Compose file.
 
-**Specs (OpenSpec / Spec Kit):** not published under this folder yet. Peer platform docs: [`../Haystack-Fast-API/specs/004-haystack-pgvector/`](../Haystack-Fast-API/specs/004-haystack-pgvector/).
+**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-web-portal-devcontainer/`](./specs/001-web-portal-devcontainer/). Peer platform docs: [`../Haystack-Fast-API/specs/004-haystack-pgvector/`](../Haystack-Fast-API/specs/004-haystack-pgvector/).
 
 ---
 

@@ -7,7 +7,8 @@ This folder ships **two optional Spring Boot / Java devcontainer packs**. They a
 | [`Spring Boot REST API devcontainer with PostgreSQL Read Replica/`](./Spring%20Boot%20REST%20API%20devcontainer%20with%20PostgreSQL%20Read%20Replica/) | App + **primary** Postgres + **streaming read replica** |
 | [`Spring Boot REST API devcontainer without read replica/`](./Spring%20Boot%20REST%20API%20devcontainer%20without%20read%20replica/) | App + **primary** Postgres only |
 
-**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-rest-api-devcontainer/`](./specs/001-rest-api-devcontainer/)
+**Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-rest-api-devcontainer/`](./specs/001-rest-api-devcontainer/)  
+**ADR / OpenSPDD:** [`../adr/`](../adr/) · [`../spdd/prompt/rest-api-devcontainer.md`](../spdd/prompt/rest-api-devcontainer.md) · [`../docs/spec-governance.md`](../docs/spec-governance.md)
 
 ---
 

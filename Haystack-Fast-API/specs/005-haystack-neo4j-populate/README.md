@@ -27,7 +27,8 @@ Projects allowlisted fleet tables from **`postgres-haystack`** into **Neo4j** vi
 - `.devcontainer/Dockerfile.neo4j-populate`
 - Compose service `neo4j-populate`
 
-**OpenSpec:** `openspec/specs/haystack-devcontainer/spec.md` + archive `2026-08-13-phase8-t3-populate-neo4j-from-haystack`
+**OpenSpec:** `openspec/specs/haystack-devcontainer/spec.md` + archive `2026-08-13-phase8-t3-populate-neo4j-from-haystack`  
+**ADR / OpenSPDD:** [`../../../adr/0008-neo4j-kg1-kg2-isolation.md`](../../../adr/0008-neo4j-kg1-kg2-isolation.md) · [`../../../spdd/prompt/haystack-devcontainer.md`](../../../spdd/prompt/haystack-devcontainer.md)
 
 **Out of scope (application repo):**
 

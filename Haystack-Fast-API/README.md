@@ -11,7 +11,8 @@ This folder ships a **single Compose-based devcontainer** for **Haystack Fast AP
 | Fleet Neo4j populate | `neo4j-populate` | SQL → Cypher **MERGE** KG-2 fleet labels; admin HTTP **8089**; post-sync trigger |
 
 **Specs (OpenSpec / Spec Kit):** [`openspec/`](./openspec/) · [`specs/001-haystack-postgres-merge-sync/`](./specs/001-haystack-postgres-merge-sync/) · [`specs/002-haystack-neo4j/`](./specs/002-haystack-neo4j/) · [`specs/004-haystack-pgvector/`](./specs/004-haystack-pgvector/) · [`specs/005-haystack-neo4j-populate/`](./specs/005-haystack-neo4j-populate/)  
-**Historical only (not in default stack):** [`specs/003-haystack-faiss/`](./specs/003-haystack-faiss/)
+**Historical only (not in default stack):** [`specs/003-haystack-faiss/`](./specs/003-haystack-faiss/)  
+**ADR / OpenSPDD:** [`../adr/`](../adr/) · [`../spdd/prompt/haystack-devcontainer.md`](../spdd/prompt/haystack-devcontainer.md) · [`../docs/spec-governance.md`](../docs/spec-governance.md)
 
 ---
 
